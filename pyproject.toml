@@ -1,0 +1,57 @@
+[project]
+name = "book-catalogue"
+version = "0.1.0"
+description = "Catalogue for all your books"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.13",
+    "uvicorn[standard]>=0.34.3",
+]
+
+[dependency-groups]
+dev = [
+    "ipdb>=0.13.13",
+    "pyright==1.1.400",
+    "ruff==0.11.8",
+]
+
+[tool.ruff]
+preview = true
+line-length = 120
+indent-width = 4
+[tool.ruff.lint]
+extend-select = [
+  # pycodestyle
+  "E", "W",
+  # pyflakes
+  "F",
+  # Import sorting
+  "I"
+]
+extend-ignore = ["D100", "D101", "D102", "D103"]
+ignore = [
+"E265",  # block comments
+"E501"  # Line too long
+]
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+typeCheckingMode= "standard"
+useLibraryCodeForTypes= false
+reportPossiblyUnboundVariable= false
+reportMissingTypeStubs= "warning"
+reportUnknownMemberType= "none"
+# reportUnknownVariableType=  "warning"
+reportUnknownArgumentType=  "none"
+reportUnknownParameterType= "warning"
+stubPath= "./typings"
+ignore= ["pandas"]
