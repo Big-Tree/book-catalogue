@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
+
 from main import app, author_db, book_db
 
 
 @pytest.fixture
-def client():
+def client() -> TestClient:
     return TestClient(app)
 
 
@@ -18,13 +19,13 @@ def clear_db():
 
 
 class TestAuthorEndpoints:
-    def test_get_authors_summary_empty(self, client):
+    def test_get_authors_summary_empty(self, client: TestClient):
         """Test GET /author/ with empty database"""
         response = client.get("/author/")
         assert response.status_code == 200
         assert response.json() == 0
 
-    def test_create_author(self, client):
+    def test_create_author(self, client: TestClient):
         """Test POST /author/"""
         author_data = {
             "name": "John",
@@ -38,22 +39,22 @@ class TestAuthorEndpoints:
         assert isinstance(author_id, str)
         assert len(author_id) > 0
 
-    def test_get_authors_summary_with_data(self, client):
+    def test_get_authors_summary_with_data(self, client: TestClient):
         """Test GET /author/ after creating authors"""
         author_data = {
             "name": "Jane",
-            "surname": "Smith", 
+            "surname": "Smith",
             "birthyear": 1985,
             "books": []
         }
         client.post("/author/", json=author_data)
         client.post("/author/", json=author_data)
-        
+
         response = client.get("/author/")
         assert response.status_code == 200
         assert response.json() == 2
 
-    def test_get_author_by_id(self, client):
+    def test_get_author_by_id(self, client: TestClient):
         """Test GET /author/{author_id}"""
         author_data = {
             "name": "Alice",
@@ -63,7 +64,7 @@ class TestAuthorEndpoints:
         }
         create_response = client.post("/author/", json=author_data)
         author_id = create_response.json()
-        
+
         response = client.get(f"/author/{author_id}")
         assert response.status_code == 200
         returned_author = response.json()
@@ -72,13 +73,13 @@ class TestAuthorEndpoints:
         assert returned_author["birthyear"] == 1990
         assert returned_author["books"] == []
 
-    def test_get_author_not_found(self, client):
+    def test_get_author_not_found(self, client: TestClient):
         """Test GET /author/{author_id} with non-existent ID"""
         response = client.get("/author/nonexistent-id")
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
 
-    def test_update_author(self, client):
+    def test_update_author(self, client: TestClient):
         """Test PUT /author/{author_id}"""
         original_data = {
             "name": "Bob",
@@ -88,7 +89,7 @@ class TestAuthorEndpoints:
         }
         create_response = client.post("/author/", json=original_data)
         author_id = create_response.json()
-        
+
         updated_data = {
             "name": "Robert",
             "surname": "Wilson",
@@ -97,14 +98,14 @@ class TestAuthorEndpoints:
         }
         response = client.put(f"/author/{author_id}", json=updated_data)
         assert response.status_code == 200
-        
+
         # Verify the update
         get_response = client.get(f"/author/{author_id}")
         updated_author = get_response.json()
         assert updated_author["name"] == "Robert"
         assert updated_author["birthyear"] == 1976
 
-    def test_update_author_not_found(self, client):
+    def test_update_author_not_found(self, client: TestClient):
         """Test PUT /author/{author_id} with non-existent ID"""
         author_data = {
             "name": "Test",
@@ -116,7 +117,7 @@ class TestAuthorEndpoints:
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
 
-    def test_delete_author(self, client):
+    def test_delete_author(self, client: TestClient):
         """Test DELETE /author/{author_id}"""
         author_data = {
             "name": "Charlie",
@@ -126,21 +127,21 @@ class TestAuthorEndpoints:
         }
         create_response = client.post("/author/", json=author_data)
         author_id = create_response.json()
-        
+
         response = client.delete(f"/author/{author_id}")
         assert response.status_code == 200
-        
+
         # Verify deletion
         get_response = client.get(f"/author/{author_id}")
         assert get_response.status_code == 400
 
-    def test_delete_author_not_found(self, client):
+    def test_delete_author_not_found(self, client: TestClient):
         """Test DELETE /author/{author_id} with non-existent ID"""
         response = client.delete("/author/nonexistent-id")
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
 
-    def test_delete_author_with_books_conflict(self, client):
+    def test_delete_author_with_books_conflict(self, client: TestClient):
         """Test DELETE /author/{author_id} when author has books"""
         # Create author
         author_data = {
@@ -151,7 +152,7 @@ class TestAuthorEndpoints:
         }
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
-        
+
         # Create book with this author
         book_data = {
             "title": "Test Book",
@@ -161,7 +162,7 @@ class TestAuthorEndpoints:
             "published_date": "2023-01-01"
         }
         client.post("/book/", json=book_data)
-        
+
         # Try to delete author
         response = client.delete(f"/author/{author_id}")
         assert response.status_code == 409
@@ -169,13 +170,13 @@ class TestAuthorEndpoints:
 
 
 class TestBookEndpoints:
-    def test_get_books_summary_empty(self, client):
+    def test_get_books_summary_empty(self, client: TestClient):
         """Test GET /book/ with empty database"""
         response = client.get("/book/")
         assert response.status_code == 200
         assert response.json() == 0
 
-    def test_create_book_without_authors(self, client):
+    def test_create_book_without_authors(self, client: TestClient):
         """Test POST /book/ with empty author list"""
         book_data = {
             "title": "Solo Book",
@@ -190,7 +191,7 @@ class TestBookEndpoints:
         assert isinstance(book_id, str)
         assert len(book_id) > 0
 
-    def test_create_book_with_authors(self, client):
+    def test_create_book_with_authors(self, client: TestClient):
         """Test POST /book/ with valid authors"""
         # Create authors first
         author_data = {
@@ -201,7 +202,7 @@ class TestBookEndpoints:
         }
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
-        
+
         book_data = {
             "title": "Collaborative Book",
             "author_list": [author_id],
@@ -214,7 +215,7 @@ class TestBookEndpoints:
         book_id = response.json()
         assert isinstance(book_id, str)
 
-    def test_create_book_with_invalid_author(self, client):
+    def test_create_book_with_invalid_author(self, client: TestClient):
         """Test POST /book/ with non-existent author"""
         book_data = {
             "title": "Invalid Book",
@@ -227,7 +228,7 @@ class TestBookEndpoints:
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
 
-    def test_get_books_summary_with_data(self, client):
+    def test_get_books_summary_with_data(self, client: TestClient):
         """Test GET /book/ after creating books"""
         book_data = {
             "title": "Test Book",
@@ -238,12 +239,12 @@ class TestBookEndpoints:
         }
         client.post("/book/", json=book_data)
         client.post("/book/", json=book_data)
-        
+
         response = client.get("/book/")
         assert response.status_code == 200
         assert response.json() == 2
 
-    def test_get_book_by_id(self, client):
+    def test_get_book_by_id(self, client: TestClient):
         """Test GET /book/{book_id}"""
         book_data = {
             "title": "Specific Book",
@@ -254,7 +255,7 @@ class TestBookEndpoints:
         }
         create_response = client.post("/book/", json=book_data)
         book_id = create_response.json()
-        
+
         response = client.get(f"/book/{book_id}")
         assert response.status_code == 200
         returned_book = response.json()
@@ -264,13 +265,13 @@ class TestBookEndpoints:
         assert returned_book["published_date"] == "2023-06-01"
         assert returned_book["author_list"] == []
 
-    def test_get_book_not_found(self, client):
+    def test_get_book_not_found(self, client: TestClient):
         """Test GET /book/{book_id} with non-existent ID"""
         response = client.get("/book/nonexistent-id")
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
 
-    def test_update_book(self, client):
+    def test_update_book(self, client: TestClient):
         """Test PUT /book/{book_id}"""
         original_data = {
             "title": "Original Title",
@@ -281,7 +282,7 @@ class TestBookEndpoints:
         }
         create_response = client.post("/book/", json=original_data)
         book_id = create_response.json()
-        
+
         updated_data = {
             "title": "Updated Title",
             "author_list": [],
@@ -291,7 +292,7 @@ class TestBookEndpoints:
         }
         response = client.put(f"/book/{book_id}", json=updated_data)
         assert response.status_code == 200
-        
+
         # Verify the update
         get_response = client.get(f"/book/{book_id}")
         updated_book = get_response.json()
@@ -299,7 +300,7 @@ class TestBookEndpoints:
         assert updated_book["publisher"] == "Updated Publisher"
         assert updated_book["edition"] == 2
 
-    def test_update_book_not_found(self, client):
+    def test_update_book_not_found(self, client: TestClient):
         """Test PUT /book/{book_id} with non-existent ID"""
         book_data = {
             "title": "Test Book",
@@ -312,7 +313,7 @@ class TestBookEndpoints:
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
 
-    def test_delete_book(self, client):
+    def test_delete_book(self, client: TestClient):
         """Test DELETE /book/{book_id}"""
         book_data = {
             "title": "Book to Delete",
@@ -323,15 +324,15 @@ class TestBookEndpoints:
         }
         create_response = client.post("/book/", json=book_data)
         book_id = create_response.json()
-        
+
         response = client.delete(f"/book/{book_id}")
         assert response.status_code == 200
-        
+
         # Verify deletion
         get_response = client.get(f"/book/{book_id}")
         assert get_response.status_code == 400
 
-    def test_delete_book_not_found(self, client):
+    def test_delete_book_not_found(self, client: TestClient):
         """Test DELETE /book/{book_id} with non-existent ID"""
         response = client.delete("/book/nonexistent-id")
         assert response.status_code == 400
@@ -339,7 +340,7 @@ class TestBookEndpoints:
 
 
 class TestIntegrationScenarios:
-    def test_full_workflow(self, client):
+    def test_full_workflow(self, client: TestClient):
         """Test complete workflow: create author, create book, update, delete"""
         # Create author
         author_data = {
@@ -350,7 +351,7 @@ class TestIntegrationScenarios:
         }
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
-        
+
         # Create book with author
         book_data = {
             "title": "Integration Book",
@@ -361,12 +362,12 @@ class TestIntegrationScenarios:
         }
         book_response = client.post("/book/", json=book_data)
         book_id = book_response.json()
-        
+
         # Verify author has book in their list
         author_get_response = client.get(f"/author/{author_id}")
         author_info = author_get_response.json()
         assert book_id in author_info["books"]
-        
+
         # Update book
         updated_book_data = {
             "title": "Updated Integration Book",
@@ -376,10 +377,10 @@ class TestIntegrationScenarios:
             "published_date": "2023-06-01"
         }
         client.put(f"/book/{book_id}", json=updated_book_data)
-        
+
         # Delete book
         client.delete(f"/book/{book_id}")
-        
+
         # Now should be able to delete author
         delete_response = client.delete(f"/author/{author_id}")
         assert delete_response.status_code == 200
