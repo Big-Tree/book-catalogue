@@ -194,7 +194,7 @@ class TestAuthorEndpoints:
             "published_date": "2023-01-01"
         }
         book2_data = {
-            "title": "Book Two", 
+            "title": "Book Two",
             "author_ids": [],
             "publisher": "Publisher Two",
             "edition": 1,
@@ -207,11 +207,11 @@ class TestAuthorEndpoints:
             "edition": 1,
             "published_date": "2023-03-01"
         }
-        
+
         book1_response = client.post("/book/", json=book1_data)
         book2_response = client.post("/book/", json=book2_data)
         book3_response = client.post("/book/", json=book3_data)
-        
+
         book1_id = book1_response.json()
         book2_id = book2_response.json()
         book3_id = book3_response.json()
@@ -232,7 +232,7 @@ class TestAuthorEndpoints:
         author_info = author_get.json()
         assert len(author_info["book_ids"]) == 3
         assert book1_id in author_info["book_ids"]
-        assert book2_id in author_info["book_ids"]  
+        assert book2_id in author_info["book_ids"]
         assert book3_id in author_info["book_ids"]
 
         # Verify bidirectional consistency - each book should have the author in their author_ids
@@ -241,11 +241,11 @@ class TestAuthorEndpoints:
         book1_get = client.get(f"/book/{book1_id}")
         book2_get = client.get(f"/book/{book2_id}")
         book3_get = client.get(f"/book/{book3_id}")
-        
+
         book1_info = book1_get.json()
         book2_info = book2_get.json()
         book3_info = book3_get.json()
-        
+
         # These assertions will likely FAIL with current implementation - revealing the bug!
         assert author_id in book1_info["author_ids"], f"Author {author_id} not found in book1 author_ids: {book1_info['author_ids']}"
         assert author_id in book2_info["author_ids"], f"Author {author_id} not found in book2 author_ids: {book2_info['author_ids']}"
@@ -434,7 +434,7 @@ class TestBookEndpoints:
         }
         author2_data = {
             "name": "Author",
-            "surname": "Two", 
+            "surname": "Two",
             "birthyear": 1980,
             "book_ids": []
         }
@@ -444,11 +444,11 @@ class TestBookEndpoints:
             "birthyear": 1990,
             "book_ids": []
         }
-        
+
         author1_response = client.post("/author/", json=author1_data)
         author2_response = client.post("/author/", json=author2_data)
         author3_response = client.post("/author/", json=author3_data)
-        
+
         author1_id = author1_response.json()
         author2_id = author2_response.json()
         author3_id = author3_response.json()
@@ -469,20 +469,20 @@ class TestBookEndpoints:
         author1_get = client.get(f"/author/{author1_id}")
         author2_get = client.get(f"/author/{author2_id}")
         author3_get = client.get(f"/author/{author3_id}")
-        
+
         author1_info = author1_get.json()
         author2_info = author2_get.json()
         author3_info = author3_get.json()
-        
+
         assert book_id in author1_info["book_ids"], f"Book {book_id} not found in author1 book_ids: {author1_info['book_ids']}"
         assert book_id in author2_info["book_ids"], f"Book {book_id} not found in author2 book_ids: {author2_info['book_ids']}"
         assert book_id in author3_info["book_ids"], f"Book {book_id} not found in author3 book_ids: {author3_info['book_ids']}"
-        
+
         # Verify each author has only one book (the one we just created)
         assert len(author1_info["book_ids"]) == 1
         assert len(author2_info["book_ids"]) == 1
         assert len(author3_info["book_ids"]) == 1
-        
+
         # Verify the book has all three authors
         book_get = client.get(f"/book/{book_id}")
         book_info = book_get.json()
@@ -585,7 +585,7 @@ class TestBookEndpoints:
         book_data = {
             "title": "Valid Book",
             "author_ids": [],
-            "publisher": "Valid Publisher", 
+            "publisher": "Valid Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
         }
@@ -637,10 +637,10 @@ class TestBookEndpoints:
         # Verify bidirectional consistency for first and last authors
         first_author_get = client.get(f"/author/{author_ids[0]}")
         last_author_get = client.get(f"/author/{author_ids[-1]}")
-        
+
         first_author_info = first_author_get.json()
         last_author_info = last_author_get.json()
-        
+
         assert book_id in first_author_info["book_ids"]
         assert book_id in last_author_info["book_ids"]
 
@@ -732,15 +732,15 @@ class TestBookEndpoints:
             "book_ids": []
         }
         author2_data = {
-            "name": "Valid2", 
+            "name": "Valid2",
             "surname": "Author2",
             "birthyear": 1985,
             "book_ids": []
         }
-        
+
         author1_response = client.post("/author/", json=author1_data)
         author2_response = client.post("/author/", json=author2_data)
-        
+
         valid_author1_id = author1_response.json()
         valid_author2_id = author2_response.json()
 
@@ -760,10 +760,10 @@ class TestBookEndpoints:
         # Verify that NO authors were modified (atomic operation)
         author1_get = client.get(f"/author/{valid_author1_id}")
         author2_get = client.get(f"/author/{valid_author2_id}")
-        
+
         author1_info = author1_get.json()
         author2_info = author2_get.json()
-        
+
         assert len(author1_info["book_ids"]) == 0, "Author1 should have no books due to failed book creation"
         assert len(author2_info["book_ids"]) == 0, "Author2 should have no books due to failed book creation"
 
@@ -785,14 +785,14 @@ class TestBookEndpoints:
         book2_data = {
             "title": "Valid Book 2",
             "author_ids": [],
-            "publisher": "Valid Publisher 2", 
+            "publisher": "Valid Publisher 2",
             "edition": 1,
             "published_date": "2023-02-01"
         }
-        
+
         book1_response = client.post("/book/", json=book1_data)
         book2_response = client.post("/book/", json=book2_data)
-        
+
         valid_book1_id = book1_response.json()
         valid_book2_id = book2_response.json()
 
@@ -810,10 +810,10 @@ class TestBookEndpoints:
         # Verify that NO books were modified (atomic operation)
         book1_get = client.get(f"/book/{valid_book1_id}")
         book2_get = client.get(f"/book/{valid_book2_id}")
-        
+
         book1_info = book1_get.json()
         book2_info = book2_get.json()
-        
+
         assert len(book1_info["author_ids"]) == 0, "Book1 should have no authors due to failed author creation"
         assert len(book2_info["author_ids"]) == 0, "Book2 should have no authors due to failed author creation"
 
@@ -841,17 +841,17 @@ class TestPutOperationsBidirectionalConsistency:
             "published_date": "2023-01-01"
         }
         book2_data = {
-            "title": "Book 2", 
+            "title": "Book 2",
             "author_ids": [],
             "publisher": "Publisher 2",
             "edition": 1,
             "published_date": "2023-02-01"
         }
-        
+
         author_response = client.post("/author/", json=author_data)
         book1_response = client.post("/book/", json=book1_data)
         book2_response = client.post("/book/", json=book2_data)
-        
+
         author_id = author_response.json()
         book1_id = book1_response.json()
         book2_id = book2_response.json()
@@ -869,10 +869,10 @@ class TestPutOperationsBidirectionalConsistency:
         # Verify bidirectional consistency - books should have the author
         book1_get = client.get(f"/book/{book1_id}")
         book2_get = client.get(f"/book/{book2_id}")
-        
+
         book1_info = book1_get.json()
         book2_info = book2_get.json()
-        
+
         assert author_id in book1_info["author_ids"], f"Author {author_id} should be in book1 author_ids"
         assert author_id in book2_info["author_ids"], f"Author {author_id} should be in book2 author_ids"
 
@@ -889,14 +889,14 @@ class TestPutOperationsBidirectionalConsistency:
         book2_data = {
             "title": "New Book",
             "author_ids": [],
-            "publisher": "New Publisher", 
+            "publisher": "New Publisher",
             "edition": 1,
             "published_date": "2023-02-01"
         }
-        
+
         book1_response = client.post("/book/", json=book1_data)
         book2_response = client.post("/book/", json=book2_data)
-        
+
         book1_id = book1_response.json()
         book2_id = book2_response.json()
 
@@ -951,11 +951,11 @@ class TestPutOperationsBidirectionalConsistency:
             "birthyear": 1985,
             "book_ids": []
         }
-        
+
         book_response = client.post("/book/", json=book_data)
         author1_response = client.post("/author/", json=author1_data)
         author2_response = client.post("/author/", json=author2_data)
-        
+
         book_id = book_response.json()
         author1_id = author1_response.json()
         author2_id = author2_response.json()
@@ -974,10 +974,10 @@ class TestPutOperationsBidirectionalConsistency:
         # Verify bidirectional consistency - authors should have the book
         author1_get = client.get(f"/author/{author1_id}")
         author2_get = client.get(f"/author/{author2_id}")
-        
+
         author1_info = author1_get.json()
         author2_info = author2_get.json()
-        
+
         assert book_id in author1_info["book_ids"], f"Book {book_id} should be in author1 book_ids"
         assert book_id in author2_info["book_ids"], f"Book {book_id} should be in author2 book_ids"
 
@@ -997,10 +997,10 @@ class TestPutOperationsBidirectionalConsistency:
             "birthyear": 1980,
             "book_ids": []
         }
-        
+
         book_response = client.post("/book/", json=book_data)
         author_response = client.post("/author/", json=author_data)
-        
+
         book_id = book_response.json()
         valid_author_id = author_response.json()
 
@@ -1061,7 +1061,7 @@ class TestPutOperationsBidirectionalConsistency:
         # Create author and one valid book
         author_data = {
             "name": "Test",
-            "surname": "Author", 
+            "surname": "Author",
             "birthyear": 1980,
             "book_ids": []
         }
@@ -1072,10 +1072,10 @@ class TestPutOperationsBidirectionalConsistency:
             "edition": 1,
             "published_date": "2023-01-01"
         }
-        
+
         author_response = client.post("/author/", json=author_data)
         book_response = client.post("/book/", json=book_data)
-        
+
         author_id = author_response.json()
         valid_book_id = book_response.json()
 
@@ -1116,10 +1116,10 @@ class TestPutOperationsBidirectionalConsistency:
             "birthyear": 1985,
             "book_ids": []
         }
-        
+
         author1_response = client.post("/author/", json=author1_data)
         author2_response = client.post("/author/", json=author2_data)
-        
+
         author1_id = author1_response.json()
         author2_id = author2_response.json()
 
@@ -1170,17 +1170,17 @@ class TestPutOperationsBidirectionalConsistency:
             "edition": 1,
             "published_date": "2023-01-01"
         }
-        
+
         author_response = client.post("/author/", json=author_data)
         book_response = client.post("/book/", json=book_data)
-        
+
         author_id = author_response.json()
         book_id = book_response.json()
 
         # Update author with duplicate book IDs
         updated_author_data = {
             "name": "Updated",
-            "surname": "Author", 
+            "surname": "Author",
             "birthyear": 1981,
             "book_ids": [book_id, book_id, book_id]  # Same ID repeated
         }
@@ -1208,10 +1208,10 @@ class TestPutOperationsBidirectionalConsistency:
             "birthyear": 1980,
             "book_ids": []
         }
-        
+
         book_response = client.post("/book/", json=book_data)
         author_response = client.post("/author/", json=author_data)
-        
+
         book_id = book_response.json()
         author_id = author_response.json()
 
