@@ -39,8 +39,9 @@ uv run pytest -v
 ## Development
 
 ```bash
-uv run ruff check    # Linting
-uv run pyright       # Type checking
+uv run ruff check     # Linting
+uv run ruff format    # Formatting
+uv run pyright        # Type checking
 ```
 
 ## Known Issues

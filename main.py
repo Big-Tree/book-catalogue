@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(title="Book Catalogue REST API", version="1.0.0")
 
-AuthorId = NewType('AuthorId', str)
-BookId = NewType('BookId', str)
+AuthorId = NewType("AuthorId", str)
+BookId = NewType("BookId", str)
 
 author_db = {}
 book_db = {}
@@ -20,10 +20,7 @@ class Author(BaseModel):
     name: str = Field(description="Author's first name", examples=["William"])
     surname: str = Field(description="Author's last name", examples=["Murphy"])
     birthyear: int = Field(description="Year the author was born", examples=[1995])
-    book_ids: list[BookId] = Field(
-        description="List of book IDs associated with this author",
-        examples=[[]]
-    )
+    book_ids: list[BookId] = Field(description="List of book IDs associated with this author", examples=[[]])
 
 
 class AuthorResponse(Author):
@@ -32,10 +29,7 @@ class AuthorResponse(Author):
 
 class Book(BaseModel):
     title: str = Field(description="Title of the book", examples=["DataSpartan - a complete history"])
-    author_ids: list[AuthorId] = Field(
-        description="List of author IDs who wrote this book",
-        examples=[[]]
-    )
+    author_ids: list[AuthorId] = Field(description="List of author IDs who wrote this book", examples=[[]])
     publisher: str = Field(description="Publisher name", examples=["Penguin Books"])
     edition: int = Field(description="Edition number", examples=[1])
     published_date: date = Field(description="Publication date", examples=["2025-06-27"])
@@ -47,8 +41,7 @@ class BookResponse(Book):
 
 @app.get("/author/")
 async def get_authors() -> list[AuthorResponse]:
-    return [AuthorResponse(author_id=author_id, **author.model_dump())
-            for author_id, author in author_db.items()]
+    return [AuthorResponse(author_id=author_id, **author.model_dump()) for author_id, author in author_db.items()]
 
 
 @app.post("/author/")
@@ -91,7 +84,7 @@ async def delete_author(author_id: AuthorId) -> AuthorId:
     elif len(author_db[author_id].book_ids) > 0:
         raise HTTPException(
             status_code=409,
-            detail=f"Cannot delete author {author_id}: Author has {len(author_db[author_id].book_ids)} books associated"
+            detail=f"Cannot delete author {author_id}: Author has {len(author_db[author_id].book_ids)} books associated",
         )
 
     del author_db[author_id]
@@ -100,8 +93,7 @@ async def delete_author(author_id: AuthorId) -> AuthorId:
 
 @app.get("/book/")
 async def get_books() -> list[BookResponse]:
-    return [BookResponse(book_id=book_id, **book.model_dump())
-            for book_id, book in book_db.items()]
+    return [BookResponse(book_id=book_id, **book.model_dump()) for book_id, book in book_db.items()]
 
 
 @app.post("/book/")

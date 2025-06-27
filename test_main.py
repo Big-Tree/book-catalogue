@@ -27,12 +27,7 @@ class TestAuthorEndpoints:
 
     def test_create_author(self, client: TestClient):
         """Test POST /author/"""
-        author_data = {
-            "name": "John",
-            "surname": "Doe",
-            "birthyear": 1970,
-            "book_ids": []
-        }
+        author_data = {"name": "John", "surname": "Doe", "birthyear": 1970, "book_ids": []}
         response = client.post("/author/", json=author_data)
         assert response.status_code == 200
         author_id = response.json()
@@ -41,12 +36,7 @@ class TestAuthorEndpoints:
 
     def test_get_authors_summary_with_data(self, client: TestClient):
         """Test GET /author/ after creating authors"""
-        author_data = {
-            "name": "Jane",
-            "surname": "Smith",
-            "birthyear": 1985,
-            "book_ids": []
-        }
+        author_data = {"name": "Jane", "surname": "Smith", "birthyear": 1985, "book_ids": []}
         client.post("/author/", json=author_data)
         client.post("/author/", json=author_data)
 
@@ -59,12 +49,7 @@ class TestAuthorEndpoints:
 
     def test_get_author_by_id(self, client: TestClient):
         """Test GET /author/{author_id}"""
-        author_data = {
-            "name": "Alice",
-            "surname": "Johnson",
-            "birthyear": 1990,
-            "book_ids": []
-        }
+        author_data = {"name": "Alice", "surname": "Johnson", "birthyear": 1990, "book_ids": []}
         create_response = client.post("/author/", json=author_data)
         author_id = create_response.json()
 
@@ -84,21 +69,11 @@ class TestAuthorEndpoints:
 
     def test_update_author(self, client: TestClient):
         """Test PUT /author/{author_id}"""
-        original_data = {
-            "name": "Bob",
-            "surname": "Wilson",
-            "birthyear": 1975,
-            "book_ids": []
-        }
+        original_data = {"name": "Bob", "surname": "Wilson", "birthyear": 1975, "book_ids": []}
         create_response = client.post("/author/", json=original_data)
         author_id = create_response.json()
 
-        updated_data = {
-            "name": "Robert",
-            "surname": "Wilson",
-            "birthyear": 1976,
-            "book_ids": []
-        }
+        updated_data = {"name": "Robert", "surname": "Wilson", "birthyear": 1976, "book_ids": []}
         response = client.put(f"/author/{author_id}", json=updated_data)
         assert response.status_code == 200
 
@@ -110,24 +85,14 @@ class TestAuthorEndpoints:
 
     def test_update_author_not_found(self, client: TestClient):
         """Test PUT /author/{author_id} with non-existent ID"""
-        author_data = {
-            "name": "Test",
-            "surname": "User",
-            "birthyear": 2000,
-            "book_ids": []
-        }
+        author_data = {"name": "Test", "surname": "User", "birthyear": 2000, "book_ids": []}
         response = client.put("/author/nonexistent-id", json=author_data)
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
 
     def test_delete_author(self, client: TestClient):
         """Test DELETE /author/{author_id}"""
-        author_data = {
-            "name": "Charlie",
-            "surname": "Brown",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Charlie", "surname": "Brown", "birthyear": 1980, "book_ids": []}
         create_response = client.post("/author/", json=author_data)
         author_id = create_response.json()
 
@@ -147,12 +112,7 @@ class TestAuthorEndpoints:
     def test_delete_author_with_books_conflict(self, client: TestClient):
         """Test DELETE /author/{author_id} when author has books"""
         # Create author
-        author_data = {
-            "name": "Diana",
-            "surname": "Prince",
-            "birthyear": 1985,
-            "book_ids": []
-        }
+        author_data = {"name": "Diana", "surname": "Prince", "birthyear": 1985, "book_ids": []}
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
 
@@ -162,7 +122,7 @@ class TestAuthorEndpoints:
             "author_ids": [author_id],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         client.post("/book/", json=book_data)
 
@@ -173,12 +133,7 @@ class TestAuthorEndpoints:
 
     def test_create_author_with_nonexistent_book(self, client: TestClient):
         """Test POST /author/ with non-existent book ID in books field"""
-        author_data = {
-            "name": "Test",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": ["nonexistent-book-id"]
-        }
+        author_data = {"name": "Test", "surname": "Author", "birthyear": 1980, "book_ids": ["nonexistent-book-id"]}
         response = client.post("/author/", json=author_data)
         assert response.status_code == 409
         assert "Book with ID nonexistent-book-id not found" in response.json()["detail"]
@@ -191,21 +146,21 @@ class TestAuthorEndpoints:
             "author_ids": [],
             "publisher": "Publisher One",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book2_data = {
             "title": "Book Two",
             "author_ids": [],
             "publisher": "Publisher Two",
             "edition": 1,
-            "published_date": "2023-02-01"
+            "published_date": "2023-02-01",
         }
         book3_data = {
             "title": "Book Three",
             "author_ids": [],
             "publisher": "Publisher Three",
             "edition": 1,
-            "published_date": "2023-03-01"
+            "published_date": "2023-03-01",
         }
 
         book1_response = client.post("/book/", json=book1_data)
@@ -221,7 +176,7 @@ class TestAuthorEndpoints:
             "name": "Multi",
             "surname": "BookAuthor",
             "birthyear": 1985,
-            "book_ids": [book1_id, book2_id, book3_id]
+            "book_ids": [book1_id, book2_id, book3_id],
         }
         author_response = client.post("/author/", json=author_data)
         assert author_response.status_code == 200
@@ -247,9 +202,15 @@ class TestAuthorEndpoints:
         book3_info = book3_get.json()
 
         # These assertions will likely FAIL with current implementation - revealing the bug!
-        assert author_id in book1_info["author_ids"], f"Author {author_id} not found in book1 author_ids: {book1_info['author_ids']}"
-        assert author_id in book2_info["author_ids"], f"Author {author_id} not found in book2 author_ids: {book2_info['author_ids']}"
-        assert author_id in book3_info["author_ids"], f"Author {author_id} not found in book3 author_ids: {book3_info['author_ids']}"
+        assert author_id in book1_info["author_ids"], (
+            f"Author {author_id} not found in book1 author_ids: {book1_info['author_ids']}"
+        )
+        assert author_id in book2_info["author_ids"], (
+            f"Author {author_id} not found in book2 author_ids: {book2_info['author_ids']}"
+        )
+        assert author_id in book3_info["author_ids"], (
+            f"Author {author_id} not found in book3 author_ids: {book3_info['author_ids']}"
+        )
 
 
 class TestBookEndpoints:
@@ -266,7 +227,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Solo Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.post("/book/", json=book_data)
         assert response.status_code == 200
@@ -277,12 +238,7 @@ class TestBookEndpoints:
     def test_create_book_with_authors(self, client: TestClient):
         """Test POST /book/ with valid authors"""
         # Create authors first
-        author_data = {
-            "name": "Author",
-            "surname": "One",
-            "birthyear": 1970,
-            "book_ids": []
-        }
+        author_data = {"name": "Author", "surname": "One", "birthyear": 1970, "book_ids": []}
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
 
@@ -291,7 +247,7 @@ class TestBookEndpoints:
             "author_ids": [author_id],
             "publisher": "Collab Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.post("/book/", json=book_data)
         assert response.status_code == 200
@@ -305,7 +261,7 @@ class TestBookEndpoints:
             "author_ids": ["nonexistent-author-id"],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.post("/book/", json=book_data)
         assert response.status_code == 400
@@ -318,7 +274,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         client.post("/book/", json=book_data)
         client.post("/book/", json=book_data)
@@ -336,7 +292,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Specific Publisher",
             "edition": 2,
-            "published_date": "2023-06-01"
+            "published_date": "2023-06-01",
         }
         create_response = client.post("/book/", json=book_data)
         book_id = create_response.json()
@@ -363,7 +319,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Original Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         create_response = client.post("/book/", json=original_data)
         book_id = create_response.json()
@@ -373,7 +329,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Updated Publisher",
             "edition": 2,
-            "published_date": "2023-12-01"
+            "published_date": "2023-12-01",
         }
         response = client.put(f"/book/{book_id}", json=updated_data)
         assert response.status_code == 200
@@ -392,7 +348,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.put("/book/nonexistent-id", json=book_data)
         assert response.status_code == 400
@@ -405,7 +361,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Delete Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         create_response = client.post("/book/", json=book_data)
         book_id = create_response.json()
@@ -426,24 +382,9 @@ class TestBookEndpoints:
     def test_create_book_with_multiple_authors_bidirectional_consistency(self, client: TestClient):
         """Test POST /book/ with multiple authors - verify bidirectional reference consistency"""
         # Create multiple authors first
-        author1_data = {
-            "name": "Author",
-            "surname": "One",
-            "birthyear": 1970,
-            "book_ids": []
-        }
-        author2_data = {
-            "name": "Author",
-            "surname": "Two",
-            "birthyear": 1980,
-            "book_ids": []
-        }
-        author3_data = {
-            "name": "Author",
-            "surname": "Three",
-            "birthyear": 1990,
-            "book_ids": []
-        }
+        author1_data = {"name": "Author", "surname": "One", "birthyear": 1970, "book_ids": []}
+        author2_data = {"name": "Author", "surname": "Two", "birthyear": 1980, "book_ids": []}
+        author3_data = {"name": "Author", "surname": "Three", "birthyear": 1990, "book_ids": []}
 
         author1_response = client.post("/author/", json=author1_data)
         author2_response = client.post("/author/", json=author2_data)
@@ -459,7 +400,7 @@ class TestBookEndpoints:
             "author_ids": [author1_id, author2_id, author3_id],
             "publisher": "Multi Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         assert book_response.status_code == 200
@@ -474,9 +415,15 @@ class TestBookEndpoints:
         author2_info = author2_get.json()
         author3_info = author3_get.json()
 
-        assert book_id in author1_info["book_ids"], f"Book {book_id} not found in author1 book_ids: {author1_info['book_ids']}"
-        assert book_id in author2_info["book_ids"], f"Book {book_id} not found in author2 book_ids: {author2_info['book_ids']}"
-        assert book_id in author3_info["book_ids"], f"Book {book_id} not found in author3 book_ids: {author3_info['book_ids']}"
+        assert book_id in author1_info["book_ids"], (
+            f"Book {book_id} not found in author1 book_ids: {author1_info['book_ids']}"
+        )
+        assert book_id in author2_info["book_ids"], (
+            f"Book {book_id} not found in author2 book_ids: {author2_info['book_ids']}"
+        )
+        assert book_id in author3_info["book_ids"], (
+            f"Book {book_id} not found in author3 book_ids: {author3_info['book_ids']}"
+        )
 
         # Verify each author has only one book (the one we just created)
         assert len(author1_info["book_ids"]) == 1
@@ -494,12 +441,7 @@ class TestBookEndpoints:
     def test_create_book_with_duplicate_author_ids(self, client: TestClient):
         """Test POST /book/ with duplicate author IDs - should handle gracefully"""
         # Create an author first
-        author_data = {
-            "name": "Duplicate",
-            "surname": "Test",
-            "birthyear": 1975,
-            "book_ids": []
-        }
+        author_data = {"name": "Duplicate", "surname": "Test", "birthyear": 1975, "book_ids": []}
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
 
@@ -509,7 +451,7 @@ class TestBookEndpoints:
             "author_ids": [author_id, author_id, author_id],  # Same ID repeated
             "publisher": "Duplicate Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         assert book_response.status_code == 200
@@ -524,12 +466,7 @@ class TestBookEndpoints:
     def test_create_book_with_mixed_valid_invalid_authors(self, client: TestClient):
         """Test POST /book/ with mix of valid and invalid author IDs"""
         # Create one valid author
-        author_data = {
-            "name": "Valid",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Valid", "surname": "Author", "birthyear": 1980, "book_ids": []}
         author_response = client.post("/author/", json=author_data)
         valid_author_id = author_response.json()
 
@@ -539,7 +476,7 @@ class TestBookEndpoints:
             "author_ids": [valid_author_id, "invalid-author-id"],
             "publisher": "Mixed Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.post("/book/", json=book_data)
         assert response.status_code == 400
@@ -558,7 +495,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         book_id = book_response.json()
@@ -568,7 +505,7 @@ class TestBookEndpoints:
             "name": "Duplicate",
             "surname": "BookAuthor",
             "birthyear": 1990,
-            "book_ids": [book_id, book_id, book_id]  # Same ID repeated
+            "book_ids": [book_id, book_id, book_id],  # Same ID repeated
         }
         author_response = client.post("/author/", json=author_data)
         assert author_response.status_code == 200
@@ -587,7 +524,7 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Valid Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         valid_book_id = book_response.json()
@@ -597,7 +534,7 @@ class TestBookEndpoints:
             "name": "Mixed",
             "surname": "BooksAuthor",
             "birthyear": 1985,
-            "book_ids": [valid_book_id, "invalid-book-id"]
+            "book_ids": [valid_book_id, "invalid-book-id"],
         }
         response = client.post("/author/", json=author_data)
         assert response.status_code == 409
@@ -613,12 +550,7 @@ class TestBookEndpoints:
         # Create 50 authors
         author_ids = []
         for i in range(50):
-            author_data = {
-                "name": f"Author{i}",
-                "surname": f"Surname{i}",
-                "birthyear": 1970 + i % 30,
-                "book_ids": []
-            }
+            author_data = {"name": f"Author{i}", "surname": f"Surname{i}", "birthyear": 1970 + i % 30, "book_ids": []}
             author_response = client.post("/author/", json=author_data)
             author_ids.append(author_response.json())
 
@@ -628,7 +560,7 @@ class TestBookEndpoints:
             "author_ids": author_ids,
             "publisher": "Many Authors Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         assert book_response.status_code == 200
@@ -659,18 +591,13 @@ class TestBookEndpoints:
                 "author_ids": [],
                 "publisher": f"Publisher{i}",
                 "edition": i % 5 + 1,
-                "published_date": f"2023-{(i % 12) + 1:02d}-01"
+                "published_date": f"2023-{(i % 12) + 1:02d}-01",
             }
             book_response = client.post("/book/", json=book_data)
             book_ids.append(book_response.json())
 
         # Create author with all 30 books
-        author_data = {
-            "name": "Prolific",
-            "surname": "Author",
-            "birthyear": 1960,
-            "book_ids": book_ids
-        }
+        author_data = {"name": "Prolific", "surname": "Author", "birthyear": 1960, "book_ids": book_ids}
         author_response = client.post("/author/", json=author_data)
         assert author_response.status_code == 200
         author_id = author_response.json()
@@ -688,7 +615,7 @@ class TestBookEndpoints:
             "author_ids": ["", "  ", ""],  # Empty strings and whitespace
             "publisher": "Empty Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.post("/book/", json=book_data)
         # Should fail because empty strings are not valid author IDs
@@ -701,7 +628,7 @@ class TestBookEndpoints:
             "name": "Empty",
             "surname": "StringTest",
             "birthyear": 1985,
-            "book_ids": ["", "  ", ""]  # Empty strings and whitespace
+            "book_ids": ["", "  ", ""],  # Empty strings and whitespace
         }
         response = client.post("/author/", json=author_data)
         # Should fail because empty strings are not valid book IDs
@@ -716,7 +643,7 @@ class TestBookEndpoints:
             "author_ids": [None, "valid-id", None],  # None values mixed with string
             "publisher": "None Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.post("/book/", json=book_data)
         # Should fail due to invalid data types
@@ -725,18 +652,8 @@ class TestBookEndpoints:
     def test_atomic_reference_updates_on_book_creation_failure(self, client: TestClient):
         """Test that partial failures in POST /book/ don't leave database in inconsistent state"""
         # Create two valid authors
-        author1_data = {
-            "name": "Valid1",
-            "surname": "Author1",
-            "birthyear": 1980,
-            "book_ids": []
-        }
-        author2_data = {
-            "name": "Valid2",
-            "surname": "Author2",
-            "birthyear": 1985,
-            "book_ids": []
-        }
+        author1_data = {"name": "Valid1", "surname": "Author1", "birthyear": 1980, "book_ids": []}
+        author2_data = {"name": "Valid2", "surname": "Author2", "birthyear": 1985, "book_ids": []}
 
         author1_response = client.post("/author/", json=author1_data)
         author2_response = client.post("/author/", json=author2_data)
@@ -751,7 +668,7 @@ class TestBookEndpoints:
             "author_ids": [valid_author1_id, valid_author2_id, "invalid-author-id"],
             "publisher": "Atomic Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.post("/book/", json=book_data)
         assert response.status_code == 400
@@ -780,14 +697,14 @@ class TestBookEndpoints:
             "author_ids": [],
             "publisher": "Valid Publisher 1",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book2_data = {
             "title": "Valid Book 2",
             "author_ids": [],
             "publisher": "Valid Publisher 2",
             "edition": 1,
-            "published_date": "2023-02-01"
+            "published_date": "2023-02-01",
         }
 
         book1_response = client.post("/book/", json=book1_data)
@@ -801,7 +718,7 @@ class TestBookEndpoints:
             "name": "Atomic",
             "surname": "TestAuthor",
             "birthyear": 1990,
-            "book_ids": [valid_book1_id, valid_book2_id, "invalid-book-id"]
+            "book_ids": [valid_book1_id, valid_book2_id, "invalid-book-id"],
         }
         response = client.post("/author/", json=author_data)
         assert response.status_code == 409
@@ -827,25 +744,20 @@ class TestPutOperationsBidirectionalConsistency:
     def test_put_author_with_new_book_ids_updates_books(self, client: TestClient):
         """Test PUT /author/ with new book_ids updates books bidirectionally"""
         # Create author and books
-        author_data = {
-            "name": "Original",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Original", "surname": "Author", "birthyear": 1980, "book_ids": []}
         book1_data = {
             "title": "Book 1",
             "author_ids": [],
             "publisher": "Publisher 1",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book2_data = {
             "title": "Book 2",
             "author_ids": [],
             "publisher": "Publisher 2",
             "edition": 1,
-            "published_date": "2023-02-01"
+            "published_date": "2023-02-01",
         }
 
         author_response = client.post("/author/", json=author_data)
@@ -861,7 +773,7 @@ class TestPutOperationsBidirectionalConsistency:
             "name": "Updated",
             "surname": "Author",
             "birthyear": 1981,
-            "book_ids": [book1_id, book2_id]
+            "book_ids": [book1_id, book2_id],
         }
         response = client.put(f"/author/{author_id}", json=updated_author_data)
         assert response.status_code == 200
@@ -884,14 +796,14 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [],
             "publisher": "Old Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book2_data = {
             "title": "New Book",
             "author_ids": [],
             "publisher": "New Publisher",
             "edition": 1,
-            "published_date": "2023-02-01"
+            "published_date": "2023-02-01",
         }
 
         book1_response = client.post("/book/", json=book1_data)
@@ -904,7 +816,7 @@ class TestPutOperationsBidirectionalConsistency:
             "name": "Test",
             "surname": "Author",
             "birthyear": 1985,
-            "book_ids": [book1_id]  # Initially references book1
+            "book_ids": [book1_id],  # Initially references book1
         }
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
@@ -914,7 +826,7 @@ class TestPutOperationsBidirectionalConsistency:
             "name": "Test",
             "surname": "Author",
             "birthyear": 1985,
-            "book_ids": [book2_id]  # Now references book2
+            "book_ids": [book2_id],  # Now references book2
         }
         response = client.put(f"/author/{author_id}", json=updated_author_data)
         assert response.status_code == 200
@@ -937,20 +849,10 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [],
             "publisher": "Original Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
-        author1_data = {
-            "name": "Author",
-            "surname": "One",
-            "birthyear": 1980,
-            "book_ids": []
-        }
-        author2_data = {
-            "name": "Author",
-            "surname": "Two",
-            "birthyear": 1985,
-            "book_ids": []
-        }
+        author1_data = {"name": "Author", "surname": "One", "birthyear": 1980, "book_ids": []}
+        author2_data = {"name": "Author", "surname": "Two", "birthyear": 1985, "book_ids": []}
 
         book_response = client.post("/book/", json=book_data)
         author1_response = client.post("/author/", json=author1_data)
@@ -966,7 +868,7 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [author1_id, author2_id],
             "publisher": "Updated Publisher",
             "edition": 2,
-            "published_date": "2023-06-01"
+            "published_date": "2023-06-01",
         }
         response = client.put(f"/book/{book_id}", json=updated_book_data)
         assert response.status_code == 200
@@ -989,14 +891,9 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
-        author_data = {
-            "name": "Valid",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Valid", "surname": "Author", "birthyear": 1980, "book_ids": []}
 
         book_response = client.post("/book/", json=book_data)
         author_response = client.post("/author/", json=author_data)
@@ -1010,7 +907,7 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [valid_author_id, "invalid-author-id"],
             "publisher": "Updated Publisher",
             "edition": 2,
-            "published_date": "2023-06-01"
+            "published_date": "2023-06-01",
         }
         response = client.put(f"/book/{book_id}", json=updated_book_data)
         assert response.status_code == 400
@@ -1030,12 +927,7 @@ class TestPutOperationsBidirectionalConsistency:
     def test_put_author_with_invalid_book_ids(self, client: TestClient):
         """Test PUT /author/ with invalid book_ids fails with validation error"""
         # Create author
-        author_data = {
-            "name": "Test",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Test", "surname": "Author", "birthyear": 1980, "book_ids": []}
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
 
@@ -1044,7 +936,7 @@ class TestPutOperationsBidirectionalConsistency:
             "name": "Updated",
             "surname": "Author",
             "birthyear": 1981,
-            "book_ids": ["invalid-book-id"]
+            "book_ids": ["invalid-book-id"],
         }
         response = client.put(f"/author/{author_id}", json=updated_author_data)
         assert response.status_code == 409
@@ -1059,18 +951,13 @@ class TestPutOperationsBidirectionalConsistency:
     def test_put_author_with_mixed_valid_invalid_book_ids(self, client: TestClient):
         """Test PUT /author/ with mix of valid and invalid book_ids fails atomically"""
         # Create author and one valid book
-        author_data = {
-            "name": "Test",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Test", "surname": "Author", "birthyear": 1980, "book_ids": []}
         book_data = {
             "title": "Valid Book",
             "author_ids": [],
             "publisher": "Valid Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
 
         author_response = client.post("/author/", json=author_data)
@@ -1084,7 +971,7 @@ class TestPutOperationsBidirectionalConsistency:
             "name": "Updated",
             "surname": "Author",
             "birthyear": 1981,
-            "book_ids": [valid_book_id, "invalid-book-id"]
+            "book_ids": [valid_book_id, "invalid-book-id"],
         }
         response = client.put(f"/author/{author_id}", json=updated_author_data)
         assert response.status_code == 409
@@ -1104,18 +991,8 @@ class TestPutOperationsBidirectionalConsistency:
     def test_put_book_removes_old_author_references(self, client: TestClient):
         """Test PUT /book/ removes book from old authors when author_ids change"""
         # Create book with initial authors
-        author1_data = {
-            "name": "Old",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
-        author2_data = {
-            "name": "New",
-            "surname": "Author",
-            "birthyear": 1985,
-            "book_ids": []
-        }
+        author1_data = {"name": "Old", "surname": "Author", "birthyear": 1980, "book_ids": []}
+        author2_data = {"name": "New", "surname": "Author", "birthyear": 1985, "book_ids": []}
 
         author1_response = client.post("/author/", json=author1_data)
         author2_response = client.post("/author/", json=author2_data)
@@ -1128,7 +1005,7 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [author1_id],  # Initially references author1
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         book_id = book_response.json()
@@ -1139,7 +1016,7 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [author2_id],  # Now references author2
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         response = client.put(f"/book/{book_id}", json=updated_book_data)
         assert response.status_code == 200
@@ -1157,18 +1034,13 @@ class TestPutOperationsBidirectionalConsistency:
     def test_put_author_with_duplicate_book_ids(self, client: TestClient):
         """Test PUT /author/ with duplicate book_ids handles gracefully"""
         # Create author and book
-        author_data = {
-            "name": "Test",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Test", "surname": "Author", "birthyear": 1980, "book_ids": []}
         book_data = {
             "title": "Test Book",
             "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
 
         author_response = client.post("/author/", json=author_data)
@@ -1182,7 +1054,7 @@ class TestPutOperationsBidirectionalConsistency:
             "name": "Updated",
             "surname": "Author",
             "birthyear": 1981,
-            "book_ids": [book_id, book_id, book_id]  # Same ID repeated
+            "book_ids": [book_id, book_id, book_id],  # Same ID repeated
         }
         response = client.put(f"/author/{author_id}", json=updated_author_data)
         assert response.status_code == 200
@@ -1200,14 +1072,9 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
-        author_data = {
-            "name": "Test",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Test", "surname": "Author", "birthyear": 1980, "book_ids": []}
 
         book_response = client.post("/book/", json=book_data)
         author_response = client.post("/author/", json=author_data)
@@ -1221,7 +1088,7 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [author_id, author_id, author_id],  # Same ID repeated
             "publisher": "Updated Publisher",
             "edition": 2,
-            "published_date": "2023-06-01"
+            "published_date": "2023-06-01",
         }
         response = client.put(f"/book/{book_id}", json=updated_book_data)
         assert response.status_code == 200
@@ -1234,12 +1101,7 @@ class TestPutOperationsBidirectionalConsistency:
     def test_put_author_with_empty_string_book_ids(self, client: TestClient):
         """Test PUT /author/ with empty string book_ids fails"""
         # Create author
-        author_data = {
-            "name": "Test",
-            "surname": "Author",
-            "birthyear": 1980,
-            "book_ids": []
-        }
+        author_data = {"name": "Test", "surname": "Author", "birthyear": 1980, "book_ids": []}
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
 
@@ -1248,7 +1110,7 @@ class TestPutOperationsBidirectionalConsistency:
             "name": "Updated",
             "surname": "Author",
             "birthyear": 1981,
-            "book_ids": ["", "  ", ""]  # Empty strings and whitespace
+            "book_ids": ["", "  ", ""],  # Empty strings and whitespace
         }
         response = client.put(f"/author/{author_id}", json=updated_author_data)
         assert response.status_code == 409
@@ -1262,7 +1124,7 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         book_id = book_response.json()
@@ -1273,7 +1135,7 @@ class TestPutOperationsBidirectionalConsistency:
             "author_ids": ["", "  ", ""],  # Empty strings and whitespace
             "publisher": "Updated Publisher",
             "edition": 2,
-            "published_date": "2023-06-01"
+            "published_date": "2023-06-01",
         }
         response = client.put(f"/book/{book_id}", json=updated_book_data)
         assert response.status_code == 400
@@ -1284,12 +1146,7 @@ class TestIntegrationScenarios:
     def test_full_workflow(self, client: TestClient):
         """Test complete workflow: create author, create book, update, delete"""
         # Create author
-        author_data = {
-            "name": "Integration",
-            "surname": "Test",
-            "birthyear": 1990,
-            "book_ids": []
-        }
+        author_data = {"name": "Integration", "surname": "Test", "birthyear": 1990, "book_ids": []}
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
 
@@ -1299,7 +1156,7 @@ class TestIntegrationScenarios:
             "author_ids": [author_id],
             "publisher": "Integration Publisher",
             "edition": 1,
-            "published_date": "2023-01-01"
+            "published_date": "2023-01-01",
         }
         book_response = client.post("/book/", json=book_data)
         book_id = book_response.json()
@@ -1315,7 +1172,7 @@ class TestIntegrationScenarios:
             "author_ids": [author_id],
             "publisher": "Updated Publisher",
             "edition": 2,
-            "published_date": "2023-06-01"
+            "published_date": "2023-06-01",
         }
         client.put(f"/book/{book_id}", json=updated_book_data)
 
