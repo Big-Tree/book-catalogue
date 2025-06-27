@@ -177,7 +177,7 @@ class TestAuthorEndpoints:
             "name": "Test",
             "surname": "Author",
             "birthyear": 1980,
-            "books": ["nonexistent-book-id"]
+            "book_ids": ["nonexistent-book-id"]
         }
         response = client.post("/author/", json=author_data)
         assert response.status_code == 409
