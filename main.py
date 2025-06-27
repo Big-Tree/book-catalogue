@@ -42,7 +42,7 @@ class Book(BaseModel):
 
 
 class BookResponse(Book):
-    BookId: BookId
+    book_id: BookId
 
 
 @app.get("/author/")
@@ -100,7 +100,7 @@ async def delete_author(author_id: AuthorId) -> AuthorId:
 
 @app.get("/book/")
 async def get_books() -> list[BookResponse]:
-    return [BookResponse(BookId=book_id, **book.model_dump())
+    return [BookResponse(book_id=book_id, **book.model_dump())
             for book_id, book in book_db.items()]
 
 
