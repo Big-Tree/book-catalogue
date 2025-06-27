@@ -168,6 +168,18 @@ class TestAuthorEndpoints:
         assert response.status_code == 409
         assert "Cannot delete author" in response.json()["detail"]
 
+    def test_create_author_with_nonexistent_book(self, client: TestClient):
+        """Test POST /author/ with non-existent book ID in books field"""
+        author_data = {
+            "name": "Test",
+            "surname": "Author",
+            "birthyear": 1980,
+            "books": ["nonexistent-book-id"]
+        }
+        response = client.post("/author/", json=author_data)
+        assert response.status_code == 409
+        assert "Book with ID nonexistent-book-id not found" in response.json()["detail"]
+
 
 class TestBookEndpoints:
     def test_get_books_summary_empty(self, client: TestClient):

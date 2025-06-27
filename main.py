@@ -51,6 +51,10 @@ async def authors_summary() -> int:
 
 @app.post("/author/")
 async def add_author(author: Author) -> AuthorId:
+    for book_id in author.books:
+        if book_id not in book_db:
+            raise HTTPException(status_code=409, detail=f"Book with ID {book_id} not found")
+    
     id = AuthorId(str(uuid.uuid4()))
     author_db[id] = author
     return id
