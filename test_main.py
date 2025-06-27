@@ -23,7 +23,7 @@ class TestAuthorEndpoints:
         """Test GET /author/ with empty database"""
         response = client.get("/author/")
         assert response.status_code == 200
-        assert response.json() == 0
+        assert response.json() == []
 
     def test_create_author(self, client: TestClient):
         """Test POST /author/"""
@@ -31,7 +31,7 @@ class TestAuthorEndpoints:
             "name": "John",
             "surname": "Doe",
             "birthyear": 1970,
-            "books": []
+            "book_ids": []
         }
         response = client.post("/author/", json=author_data)
         assert response.status_code == 200
@@ -45,14 +45,17 @@ class TestAuthorEndpoints:
             "name": "Jane",
             "surname": "Smith",
             "birthyear": 1985,
-            "books": []
+            "book_ids": []
         }
         client.post("/author/", json=author_data)
         client.post("/author/", json=author_data)
 
         response = client.get("/author/")
         assert response.status_code == 200
-        assert response.json() == 2
+        authors = response.json()
+        assert len(authors) == 2
+        assert all(author["name"] == "Jane" for author in authors)
+        assert all(author["surname"] == "Smith" for author in authors)
 
     def test_get_author_by_id(self, client: TestClient):
         """Test GET /author/{author_id}"""
@@ -60,7 +63,7 @@ class TestAuthorEndpoints:
             "name": "Alice",
             "surname": "Johnson",
             "birthyear": 1990,
-            "books": []
+            "book_ids": []
         }
         create_response = client.post("/author/", json=author_data)
         author_id = create_response.json()
@@ -71,7 +74,7 @@ class TestAuthorEndpoints:
         assert returned_author["name"] == "Alice"
         assert returned_author["surname"] == "Johnson"
         assert returned_author["birthyear"] == 1990
-        assert returned_author["books"] == []
+        assert returned_author["book_ids"] == []
 
     def test_get_author_not_found(self, client: TestClient):
         """Test GET /author/{author_id} with non-existent ID"""
@@ -85,7 +88,7 @@ class TestAuthorEndpoints:
             "name": "Bob",
             "surname": "Wilson",
             "birthyear": 1975,
-            "books": []
+            "book_ids": []
         }
         create_response = client.post("/author/", json=original_data)
         author_id = create_response.json()
@@ -94,7 +97,7 @@ class TestAuthorEndpoints:
             "name": "Robert",
             "surname": "Wilson",
             "birthyear": 1976,
-            "books": []
+            "book_ids": []
         }
         response = client.put(f"/author/{author_id}", json=updated_data)
         assert response.status_code == 200
@@ -111,7 +114,7 @@ class TestAuthorEndpoints:
             "name": "Test",
             "surname": "User",
             "birthyear": 2000,
-            "books": []
+            "book_ids": []
         }
         response = client.put("/author/nonexistent-id", json=author_data)
         assert response.status_code == 400
@@ -123,7 +126,7 @@ class TestAuthorEndpoints:
             "name": "Charlie",
             "surname": "Brown",
             "birthyear": 1980,
-            "books": []
+            "book_ids": []
         }
         create_response = client.post("/author/", json=author_data)
         author_id = create_response.json()
@@ -148,7 +151,7 @@ class TestAuthorEndpoints:
             "name": "Diana",
             "surname": "Prince",
             "birthyear": 1985,
-            "books": []
+            "book_ids": []
         }
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
@@ -156,7 +159,7 @@ class TestAuthorEndpoints:
         # Create book with this author
         book_data = {
             "title": "Test Book",
-            "author_list": [author_id],
+            "author_ids": [author_id],
             "publisher": "Test Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -186,13 +189,13 @@ class TestBookEndpoints:
         """Test GET /book/ with empty database"""
         response = client.get("/book/")
         assert response.status_code == 200
-        assert response.json() == 0
+        assert response.json() == []
 
     def test_create_book_without_authors(self, client: TestClient):
         """Test POST /book/ with empty author list"""
         book_data = {
             "title": "Solo Book",
-            "author_list": [],
+            "author_ids": [],
             "publisher": "Solo Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -210,14 +213,14 @@ class TestBookEndpoints:
             "name": "Author",
             "surname": "One",
             "birthyear": 1970,
-            "books": []
+            "book_ids": []
         }
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
 
         book_data = {
             "title": "Collaborative Book",
-            "author_list": [author_id],
+            "author_ids": [author_id],
             "publisher": "Collab Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -231,7 +234,7 @@ class TestBookEndpoints:
         """Test POST /book/ with non-existent author"""
         book_data = {
             "title": "Invalid Book",
-            "author_list": ["nonexistent-author-id"],
+            "author_ids": ["nonexistent-author-id"],
             "publisher": "Test Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -244,7 +247,7 @@ class TestBookEndpoints:
         """Test GET /book/ after creating books"""
         book_data = {
             "title": "Test Book",
-            "author_list": [],
+            "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -254,13 +257,15 @@ class TestBookEndpoints:
 
         response = client.get("/book/")
         assert response.status_code == 200
-        assert response.json() == 2
+        books = response.json()
+        assert len(books) == 2
+        assert all(book["title"] == "Test Book" for book in books)
 
     def test_get_book_by_id(self, client: TestClient):
         """Test GET /book/{book_id}"""
         book_data = {
             "title": "Specific Book",
-            "author_list": [],
+            "author_ids": [],
             "publisher": "Specific Publisher",
             "edition": 2,
             "published_date": "2023-06-01"
@@ -275,7 +280,7 @@ class TestBookEndpoints:
         assert returned_book["publisher"] == "Specific Publisher"
         assert returned_book["edition"] == 2
         assert returned_book["published_date"] == "2023-06-01"
-        assert returned_book["author_list"] == []
+        assert returned_book["author_ids"] == []
 
     def test_get_book_not_found(self, client: TestClient):
         """Test GET /book/{book_id} with non-existent ID"""
@@ -287,7 +292,7 @@ class TestBookEndpoints:
         """Test PUT /book/{book_id}"""
         original_data = {
             "title": "Original Title",
-            "author_list": [],
+            "author_ids": [],
             "publisher": "Original Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -297,7 +302,7 @@ class TestBookEndpoints:
 
         updated_data = {
             "title": "Updated Title",
-            "author_list": [],
+            "author_ids": [],
             "publisher": "Updated Publisher",
             "edition": 2,
             "published_date": "2023-12-01"
@@ -316,7 +321,7 @@ class TestBookEndpoints:
         """Test PUT /book/{book_id} with non-existent ID"""
         book_data = {
             "title": "Test Book",
-            "author_list": [],
+            "author_ids": [],
             "publisher": "Test Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -329,7 +334,7 @@ class TestBookEndpoints:
         """Test DELETE /book/{book_id}"""
         book_data = {
             "title": "Book to Delete",
-            "author_list": [],
+            "author_ids": [],
             "publisher": "Delete Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -359,7 +364,7 @@ class TestIntegrationScenarios:
             "name": "Integration",
             "surname": "Test",
             "birthyear": 1990,
-            "books": []
+            "book_ids": []
         }
         author_response = client.post("/author/", json=author_data)
         author_id = author_response.json()
@@ -367,7 +372,7 @@ class TestIntegrationScenarios:
         # Create book with author
         book_data = {
             "title": "Integration Book",
-            "author_list": [author_id],
+            "author_ids": [author_id],
             "publisher": "Integration Publisher",
             "edition": 1,
             "published_date": "2023-01-01"
@@ -378,12 +383,12 @@ class TestIntegrationScenarios:
         # Verify author has book in their list
         author_get_response = client.get(f"/author/{author_id}")
         author_info = author_get_response.json()
-        assert book_id in author_info["books"]
+        assert book_id in author_info["book_ids"]
 
         # Update book
         updated_book_data = {
             "title": "Updated Integration Book",
-            "author_list": [author_id],
+            "author_ids": [author_id],
             "publisher": "Updated Publisher",
             "edition": 2,
             "published_date": "2023-06-01"

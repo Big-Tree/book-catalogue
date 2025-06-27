@@ -20,31 +20,40 @@ class Author(BaseModel):
     name: str = Field(description="Author's first name", examples=["William"])
     surname: str = Field(description="Author's last name", examples=["Murphy"])
     birthyear: int = Field(description="Year the author was born", examples=[1995])
-    books: list[BookId] = Field(
+    book_ids: list[BookId] = Field(
         description="List of book IDs associated with this author",
-        examples=[["550e8400-e29b-41d4-a716-446655440000"]]
+        examples=[[]]
     )
+
+
+class AuthorResponse(Author):
+    author_id: AuthorId
 
 
 class Book(BaseModel):
     title: str = Field(description="Title of the book", examples=["DataSpartan - a complete history"])
-    author_list: list[AuthorId] = Field(
+    author_ids: list[AuthorId] = Field(
         description="List of author IDs who wrote this book",
-        examples=[["550e8400-e29b-41d4-a716-446655440001"]]
+        examples=[[]]
     )
     publisher: str = Field(description="Publisher name", examples=["Penguin Books"])
     edition: int = Field(description="Edition number", examples=[1])
-    published_date: date = Field(description="Publication date", examples=["2023-01-15"])
+    published_date: date = Field(description="Publication date", examples=["2025-06-27"])
+
+
+class BookResponse(Book):
+    BookId: BookId
 
 
 @app.get("/author/")
-async def authors_summary() -> int:
-    return len(author_db)
+async def get_authors() -> list[AuthorResponse]:
+    return [AuthorResponse(author_id=author_id, **author.model_dump())
+            for author_id, author in author_db.items()]
 
 
 @app.post("/author/")
 async def add_author(author: Author) -> AuthorId:
-    for book_id in author.books:
+    for book_id in author.book_ids:
         if book_id not in book_db:
             raise HTTPException(status_code=409, detail=f"Book with ID {book_id} not found")
 
@@ -54,19 +63,20 @@ async def add_author(author: Author) -> AuthorId:
 
 
 @app.get("/book/")
-async def books_summary() -> int:
-    return len(book_db)
+async def get_books() -> list[BookResponse]:
+    return [BookResponse(BookId=book_id, **book.model_dump())
+            for book_id, book in book_db.items()]
 
 
 @app.post("/book/")
 async def add_book(book: Book) -> BookId:
     book_id = BookId(str(uuid.uuid4()))
 
-    for author_id in book.author_list:
+    for author_id in book.author_ids:
         if author_id not in author_db:
             raise HTTPException(status_code=400, detail=f"Author with ID {author_id} not found")
         else:
-            author_db[author_id].books.append(book_id)
+            author_db[author_id].book_ids.append(book_id)
 
     book_db[book_id] = book
 
@@ -111,10 +121,10 @@ async def update_book(book_id: BookId, book: Book) -> BookId:
 async def delete_author(author_id: AuthorId) -> AuthorId:
     if author_id not in author_db:
         raise HTTPException(status_code=400, detail=f"Author with ID {author_id} not found")
-    elif len(author_db[author_id].books) > 0:
+    elif len(author_db[author_id].book_ids) > 0:
         raise HTTPException(
             status_code=409,
-            detail=f"Cannot delete author {author_id}: Author has {len(author_db[author_id].books)} books associated"
+            detail=f"Cannot delete author {author_id}: Author has {len(author_db[author_id].book_ids)} books associated"
         )
 
     del author_db[author_id]
@@ -127,9 +137,9 @@ async def delete_book(book_id: BookId) -> BookId:
         raise HTTPException(status_code=400, detail=f"Book with ID {book_id} not found")
 
     # Remove book from all authors' book lists
-    for author_id in book_db[book_id].author_list:
+    for author_id in book_db[book_id].author_ids:
         if author_id in author_db:
-            author_db[author_id].books.remove(book_id)
+            author_db[author_id].book_ids.remove(book_id)
 
     del book_db[book_id]
     return book_id
