@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import NewType
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="Book Catalogue REST API", version="1.0.0")
 
@@ -16,32 +17,24 @@ book_db = {}
 
 
 class Author(BaseModel):
-    name: str
-    surname: str
-    birthyear: int
-    books: list[BookId]
+    name: str = Field(description="Author's first name", examples=["William"])
+    surname: str = Field(description="Author's last name", examples=["Murphy"])
+    birthyear: int = Field(description="Year the author was born", examples=[1995])
+    books: list[BookId] = Field(
+        description="List of book IDs associated with this author",
+        examples=[["550e8400-e29b-41d4-a716-446655440000"]]
+    )
 
 
 class Book(BaseModel):
-    title: str
-    author_list: list[AuthorId]
-    publisher: str
-    edition: int
-    published_date: str
-
-
-class Item(BaseModel):
-    id: str | None = None
-    name: str
-    description: str | None = None
-    price: float
-
-
-class ItemResponse(BaseModel):
-    id: str
-    name: str
-    description: str | None = None
-    price: float
+    title: str = Field(description="Title of the book", examples=["DataSpartan - a complete history"])
+    author_list: list[AuthorId] = Field(
+        description="List of author IDs who wrote this book",
+        examples=[["550e8400-e29b-41d4-a716-446655440001"]]
+    )
+    publisher: str = Field(description="Publisher name", examples=["Penguin Books"])
+    edition: int = Field(description="Edition number", examples=[1])
+    published_date: date = Field(description="Publication date", examples=["2023-01-15"])
 
 
 @app.get("/author/")
@@ -54,7 +47,7 @@ async def add_author(author: Author) -> AuthorId:
     for book_id in author.books:
         if book_id not in book_db:
             raise HTTPException(status_code=409, detail=f"Book with ID {book_id} not found")
-    
+
     id = AuthorId(str(uuid.uuid4()))
     author_db[id] = author
     return id
