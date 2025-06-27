@@ -45,11 +45,11 @@ uv run pyright       # Type checking
 
 ## Known Issues
 
-**PUT operations are broken:**
+**Some PUT operations are broken:**
 - No validation of referenced IDs
 - No bidirectional reference updates
 
-**Failing tests:**
+**9 out of 11 PUT tests fail:**
 ```bash
-uv run pytest test_main.py::TestPutOperationsBidirectionalConsistency -v
+uv run pytest -v
 ```

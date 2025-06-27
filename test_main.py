@@ -1056,6 +1056,229 @@ class TestPutOperationsBidirectionalConsistency:
         assert author_info["name"] == "Test"  # Original name
         assert author_info["book_ids"] == []  # Original empty list
 
+    def test_put_author_with_mixed_valid_invalid_book_ids(self, client: TestClient):
+        """Test PUT /author/ with mix of valid and invalid book_ids fails atomically"""
+        # Create author and one valid book
+        author_data = {
+            "name": "Test",
+            "surname": "Author", 
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        book_data = {
+            "title": "Valid Book",
+            "author_ids": [],
+            "publisher": "Valid Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        
+        author_response = client.post("/author/", json=author_data)
+        book_response = client.post("/book/", json=book_data)
+        
+        author_id = author_response.json()
+        valid_book_id = book_response.json()
+
+        # Try to update author with mix of valid and invalid book IDs
+        updated_author_data = {
+            "name": "Updated",
+            "surname": "Author",
+            "birthyear": 1981,
+            "book_ids": [valid_book_id, "invalid-book-id"]
+        }
+        response = client.put(f"/author/{author_id}", json=updated_author_data)
+        assert response.status_code == 409
+        assert "Book with ID invalid-book-id not found" in response.json()["detail"]
+
+        # Verify atomic failure - author should be unchanged
+        author_get = client.get(f"/author/{author_id}")
+        author_info = author_get.json()
+        assert author_info["name"] == "Test"  # Original name
+        assert author_info["book_ids"] == []  # Original empty list
+
+        # Verify valid book wasn't modified
+        book_get = client.get(f"/book/{valid_book_id}")
+        book_info = book_get.json()
+        assert len(book_info["author_ids"]) == 0
+
+    def test_put_book_removes_old_author_references(self, client: TestClient):
+        """Test PUT /book/ removes book from old authors when author_ids change"""
+        # Create book with initial authors
+        author1_data = {
+            "name": "Old",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        author2_data = {
+            "name": "New",
+            "surname": "Author",
+            "birthyear": 1985,
+            "book_ids": []
+        }
+        
+        author1_response = client.post("/author/", json=author1_data)
+        author2_response = client.post("/author/", json=author2_data)
+        
+        author1_id = author1_response.json()
+        author2_id = author2_response.json()
+
+        book_data = {
+            "title": "Test Book",
+            "author_ids": [author1_id],  # Initially references author1
+            "publisher": "Test Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book_response = client.post("/book/", json=book_data)
+        book_id = book_response.json()
+
+        # Update book to reference author2 instead of author1
+        updated_book_data = {
+            "title": "Test Book",
+            "author_ids": [author2_id],  # Now references author2
+            "publisher": "Test Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        response = client.put(f"/book/{book_id}", json=updated_book_data)
+        assert response.status_code == 200
+
+        # Verify author1 no longer has the book
+        author1_get = client.get(f"/author/{author1_id}")
+        author1_info = author1_get.json()
+        assert book_id not in author1_info["book_ids"], f"Book {book_id} should be removed from author1"
+
+        # Verify author2 now has the book
+        author2_get = client.get(f"/author/{author2_id}")
+        author2_info = author2_get.json()
+        assert book_id in author2_info["book_ids"], f"Book {book_id} should be added to author2"
+
+    def test_put_author_with_duplicate_book_ids(self, client: TestClient):
+        """Test PUT /author/ with duplicate book_ids handles gracefully"""
+        # Create author and book
+        author_data = {
+            "name": "Test",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        book_data = {
+            "title": "Test Book",
+            "author_ids": [],
+            "publisher": "Test Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        
+        author_response = client.post("/author/", json=author_data)
+        book_response = client.post("/book/", json=book_data)
+        
+        author_id = author_response.json()
+        book_id = book_response.json()
+
+        # Update author with duplicate book IDs
+        updated_author_data = {
+            "name": "Updated",
+            "surname": "Author", 
+            "birthyear": 1981,
+            "book_ids": [book_id, book_id, book_id]  # Same ID repeated
+        }
+        response = client.put(f"/author/{author_id}", json=updated_author_data)
+        assert response.status_code == 200
+
+        # Verify author has the book (should handle duplicates gracefully)
+        author_get = client.get(f"/author/{author_id}")
+        author_info = author_get.json()
+        assert book_id in author_info["book_ids"]
+
+    def test_put_book_with_duplicate_author_ids(self, client: TestClient):
+        """Test PUT /book/ with duplicate author_ids handles gracefully"""
+        # Create book and author
+        book_data = {
+            "title": "Test Book",
+            "author_ids": [],
+            "publisher": "Test Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        author_data = {
+            "name": "Test",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        
+        book_response = client.post("/book/", json=book_data)
+        author_response = client.post("/author/", json=author_data)
+        
+        book_id = book_response.json()
+        author_id = author_response.json()
+
+        # Update book with duplicate author IDs
+        updated_book_data = {
+            "title": "Updated Book",
+            "author_ids": [author_id, author_id, author_id],  # Same ID repeated
+            "publisher": "Updated Publisher",
+            "edition": 2,
+            "published_date": "2023-06-01"
+        }
+        response = client.put(f"/book/{book_id}", json=updated_book_data)
+        assert response.status_code == 200
+
+        # Verify book has the author (should handle duplicates gracefully)
+        book_get = client.get(f"/book/{book_id}")
+        book_info = book_get.json()
+        assert author_id in book_info["author_ids"]
+
+    def test_put_author_with_empty_string_book_ids(self, client: TestClient):
+        """Test PUT /author/ with empty string book_ids fails"""
+        # Create author
+        author_data = {
+            "name": "Test",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        author_response = client.post("/author/", json=author_data)
+        author_id = author_response.json()
+
+        # Try to update with empty string book IDs
+        updated_author_data = {
+            "name": "Updated",
+            "surname": "Author",
+            "birthyear": 1981,
+            "book_ids": ["", "  ", ""]  # Empty strings and whitespace
+        }
+        response = client.put(f"/author/{author_id}", json=updated_author_data)
+        assert response.status_code == 409
+        assert "Book with ID" in response.json()["detail"]
+
+    def test_put_book_with_empty_string_author_ids(self, client: TestClient):
+        """Test PUT /book/ with empty string author_ids fails"""
+        # Create book
+        book_data = {
+            "title": "Test Book",
+            "author_ids": [],
+            "publisher": "Test Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book_response = client.post("/book/", json=book_data)
+        book_id = book_response.json()
+
+        # Try to update with empty string author IDs
+        updated_book_data = {
+            "title": "Updated Book",
+            "author_ids": ["", "  ", ""],  # Empty strings and whitespace
+            "publisher": "Updated Publisher",
+            "edition": 2,
+            "published_date": "2023-06-01"
+        }
+        response = client.put(f"/book/{book_id}", json=updated_book_data)
+        assert response.status_code == 400
+        assert "not found" in response.json()["detail"]
+
 
 class TestIntegrationScenarios:
     def test_full_workflow(self, client: TestClient):
