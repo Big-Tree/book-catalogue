@@ -183,6 +183,74 @@ class TestAuthorEndpoints:
         assert response.status_code == 409
         assert "Book with ID nonexistent-book-id not found" in response.json()["detail"]
 
+    def test_create_author_with_existing_books_bidirectional_consistency(self, client: TestClient):
+        """Test POST /author/ with existing book_ids - verify bidirectional consistency"""
+        # Create multiple books first (without authors)
+        book1_data = {
+            "title": "Book One",
+            "author_ids": [],
+            "publisher": "Publisher One",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book2_data = {
+            "title": "Book Two", 
+            "author_ids": [],
+            "publisher": "Publisher Two",
+            "edition": 1,
+            "published_date": "2023-02-01"
+        }
+        book3_data = {
+            "title": "Book Three",
+            "author_ids": [],
+            "publisher": "Publisher Three",
+            "edition": 1,
+            "published_date": "2023-03-01"
+        }
+        
+        book1_response = client.post("/book/", json=book1_data)
+        book2_response = client.post("/book/", json=book2_data)
+        book3_response = client.post("/book/", json=book3_data)
+        
+        book1_id = book1_response.json()
+        book2_id = book2_response.json()
+        book3_id = book3_response.json()
+
+        # Create author with all three books
+        author_data = {
+            "name": "Multi",
+            "surname": "BookAuthor",
+            "birthyear": 1985,
+            "book_ids": [book1_id, book2_id, book3_id]
+        }
+        author_response = client.post("/author/", json=author_data)
+        assert author_response.status_code == 200
+        author_id = author_response.json()
+
+        # Verify the author was created with all books
+        author_get = client.get(f"/author/{author_id}")
+        author_info = author_get.json()
+        assert len(author_info["book_ids"]) == 3
+        assert book1_id in author_info["book_ids"]
+        assert book2_id in author_info["book_ids"]  
+        assert book3_id in author_info["book_ids"]
+
+        # Verify bidirectional consistency - each book should have the author in their author_ids
+        # NOTE: This test will reveal if the current implementation has a bug!
+        # The current POST /author/ endpoint doesn't update books' author_ids when creating an author with book_ids
+        book1_get = client.get(f"/book/{book1_id}")
+        book2_get = client.get(f"/book/{book2_id}")
+        book3_get = client.get(f"/book/{book3_id}")
+        
+        book1_info = book1_get.json()
+        book2_info = book2_get.json()
+        book3_info = book3_get.json()
+        
+        # These assertions will likely FAIL with current implementation - revealing the bug!
+        assert author_id in book1_info["author_ids"], f"Author {author_id} not found in book1 author_ids: {book1_info['author_ids']}"
+        assert author_id in book2_info["author_ids"], f"Author {author_id} not found in book2 author_ids: {book2_info['author_ids']}"
+        assert author_id in book3_info["author_ids"], f"Author {author_id} not found in book3 author_ids: {book3_info['author_ids']}"
+
 
 class TestBookEndpoints:
     def test_get_books_summary_empty(self, client: TestClient):
@@ -354,6 +422,405 @@ class TestBookEndpoints:
         response = client.delete("/book/nonexistent-id")
         assert response.status_code == 400
         assert "not found" in response.json()["detail"]
+
+    def test_create_book_with_multiple_authors_bidirectional_consistency(self, client: TestClient):
+        """Test POST /book/ with multiple authors - verify bidirectional reference consistency"""
+        # Create multiple authors first
+        author1_data = {
+            "name": "Author",
+            "surname": "One",
+            "birthyear": 1970,
+            "book_ids": []
+        }
+        author2_data = {
+            "name": "Author",
+            "surname": "Two", 
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        author3_data = {
+            "name": "Author",
+            "surname": "Three",
+            "birthyear": 1990,
+            "book_ids": []
+        }
+        
+        author1_response = client.post("/author/", json=author1_data)
+        author2_response = client.post("/author/", json=author2_data)
+        author3_response = client.post("/author/", json=author3_data)
+        
+        author1_id = author1_response.json()
+        author2_id = author2_response.json()
+        author3_id = author3_response.json()
+
+        # Create book with all three authors
+        book_data = {
+            "title": "Multi-Author Book",
+            "author_ids": [author1_id, author2_id, author3_id],
+            "publisher": "Multi Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book_response = client.post("/book/", json=book_data)
+        assert book_response.status_code == 200
+        book_id = book_response.json()
+
+        # Verify bidirectional consistency - each author should have the book in their book_ids
+        author1_get = client.get(f"/author/{author1_id}")
+        author2_get = client.get(f"/author/{author2_id}")
+        author3_get = client.get(f"/author/{author3_id}")
+        
+        author1_info = author1_get.json()
+        author2_info = author2_get.json()
+        author3_info = author3_get.json()
+        
+        assert book_id in author1_info["book_ids"], f"Book {book_id} not found in author1 book_ids: {author1_info['book_ids']}"
+        assert book_id in author2_info["book_ids"], f"Book {book_id} not found in author2 book_ids: {author2_info['book_ids']}"
+        assert book_id in author3_info["book_ids"], f"Book {book_id} not found in author3 book_ids: {author3_info['book_ids']}"
+        
+        # Verify each author has only one book (the one we just created)
+        assert len(author1_info["book_ids"]) == 1
+        assert len(author2_info["book_ids"]) == 1
+        assert len(author3_info["book_ids"]) == 1
+        
+        # Verify the book has all three authors
+        book_get = client.get(f"/book/{book_id}")
+        book_info = book_get.json()
+        assert len(book_info["author_ids"]) == 3
+        assert author1_id in book_info["author_ids"]
+        assert author2_id in book_info["author_ids"]
+        assert author3_id in book_info["author_ids"]
+
+    def test_create_book_with_duplicate_author_ids(self, client: TestClient):
+        """Test POST /book/ with duplicate author IDs - should handle gracefully"""
+        # Create an author first
+        author_data = {
+            "name": "Duplicate",
+            "surname": "Test",
+            "birthyear": 1975,
+            "book_ids": []
+        }
+        author_response = client.post("/author/", json=author_data)
+        author_id = author_response.json()
+
+        # Create book with duplicate author IDs
+        book_data = {
+            "title": "Duplicate Author Book",
+            "author_ids": [author_id, author_id, author_id],  # Same ID repeated
+            "publisher": "Duplicate Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book_response = client.post("/book/", json=book_data)
+        assert book_response.status_code == 200
+        book_id = book_response.json()
+
+        # Verify author only has the book once in their book_ids (no duplicates)
+        author_get = client.get(f"/author/{author_id}")
+        author_info = author_get.json()
+        assert book_id in author_info["book_ids"]
+        assert author_info["book_ids"].count(book_id) == 1, "Book should appear only once in author's book_ids"
+
+    def test_create_book_with_mixed_valid_invalid_authors(self, client: TestClient):
+        """Test POST /book/ with mix of valid and invalid author IDs"""
+        # Create one valid author
+        author_data = {
+            "name": "Valid",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        author_response = client.post("/author/", json=author_data)
+        valid_author_id = author_response.json()
+
+        # Try to create book with mix of valid and invalid author IDs
+        book_data = {
+            "title": "Mixed Authors Book",
+            "author_ids": [valid_author_id, "invalid-author-id"],
+            "publisher": "Mixed Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        response = client.post("/book/", json=book_data)
+        assert response.status_code == 400
+        assert "not found" in response.json()["detail"]
+
+        # Verify the valid author wasn't modified (atomic operation)
+        author_get = client.get(f"/author/{valid_author_id}")
+        author_info = author_get.json()
+        assert len(author_info["book_ids"]) == 0, "Author should have no books due to failed book creation"
+
+    def test_create_author_with_duplicate_book_ids(self, client: TestClient):
+        """Test POST /author/ with duplicate book IDs"""
+        # Create a book first
+        book_data = {
+            "title": "Duplicate Test Book",
+            "author_ids": [],
+            "publisher": "Test Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book_response = client.post("/book/", json=book_data)
+        book_id = book_response.json()
+
+        # Create author with duplicate book IDs
+        author_data = {
+            "name": "Duplicate",
+            "surname": "BookAuthor",
+            "birthyear": 1990,
+            "book_ids": [book_id, book_id, book_id]  # Same ID repeated
+        }
+        author_response = client.post("/author/", json=author_data)
+        assert author_response.status_code == 200
+        author_id = author_response.json()
+
+        # Verify author has the book (should handle duplicates gracefully)
+        author_get = client.get(f"/author/{author_id}")
+        author_info = author_get.json()
+        assert book_id in author_info["book_ids"]
+
+    def test_create_author_with_mixed_valid_invalid_books(self, client: TestClient):
+        """Test POST /author/ with mix of valid and invalid book IDs"""
+        # Create one valid book
+        book_data = {
+            "title": "Valid Book",
+            "author_ids": [],
+            "publisher": "Valid Publisher", 
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book_response = client.post("/book/", json=book_data)
+        valid_book_id = book_response.json()
+
+        # Try to create author with mix of valid and invalid book IDs
+        author_data = {
+            "name": "Mixed",
+            "surname": "BooksAuthor",
+            "birthyear": 1985,
+            "book_ids": [valid_book_id, "invalid-book-id"]
+        }
+        response = client.post("/author/", json=author_data)
+        assert response.status_code == 409
+        assert "Book with ID invalid-book-id not found" in response.json()["detail"]
+
+        # Verify the valid book wasn't modified (atomic operation)
+        book_get = client.get(f"/book/{valid_book_id}")
+        book_info = book_get.json()
+        assert len(book_info["author_ids"]) == 0, "Book should have no authors due to failed author creation"
+
+    def test_create_book_with_large_author_array(self, client: TestClient):
+        """Test POST /book/ with large number of authors"""
+        # Create 50 authors
+        author_ids = []
+        for i in range(50):
+            author_data = {
+                "name": f"Author{i}",
+                "surname": f"Surname{i}",
+                "birthyear": 1970 + i % 30,
+                "book_ids": []
+            }
+            author_response = client.post("/author/", json=author_data)
+            author_ids.append(author_response.json())
+
+        # Create book with all 50 authors
+        book_data = {
+            "title": "Massive Collaboration Book",
+            "author_ids": author_ids,
+            "publisher": "Many Authors Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book_response = client.post("/book/", json=book_data)
+        assert book_response.status_code == 200
+        book_id = book_response.json()
+
+        # Verify bidirectional consistency for first and last authors
+        first_author_get = client.get(f"/author/{author_ids[0]}")
+        last_author_get = client.get(f"/author/{author_ids[-1]}")
+        
+        first_author_info = first_author_get.json()
+        last_author_info = last_author_get.json()
+        
+        assert book_id in first_author_info["book_ids"]
+        assert book_id in last_author_info["book_ids"]
+
+        # Verify book has all authors
+        book_get = client.get(f"/book/{book_id}")
+        book_info = book_get.json()
+        assert len(book_info["author_ids"]) == 50
+
+    def test_create_author_with_large_book_array(self, client: TestClient):
+        """Test POST /author/ with large number of books"""
+        # Create 30 books
+        book_ids = []
+        for i in range(30):
+            book_data = {
+                "title": f"Book{i}",
+                "author_ids": [],
+                "publisher": f"Publisher{i}",
+                "edition": i % 5 + 1,
+                "published_date": f"2023-{(i % 12) + 1:02d}-01"
+            }
+            book_response = client.post("/book/", json=book_data)
+            book_ids.append(book_response.json())
+
+        # Create author with all 30 books
+        author_data = {
+            "name": "Prolific",
+            "surname": "Author",
+            "birthyear": 1960,
+            "book_ids": book_ids
+        }
+        author_response = client.post("/author/", json=author_data)
+        assert author_response.status_code == 200
+        author_id = author_response.json()
+
+        # Verify author has all books
+        author_get = client.get(f"/author/{author_id}")
+        author_info = author_get.json()
+        assert len(author_info["book_ids"]) == 30
+        assert all(book_id in author_info["book_ids"] for book_id in book_ids)
+
+    def test_create_book_with_empty_string_author_ids(self, client: TestClient):
+        """Test POST /book/ with empty strings in author_ids array"""
+        book_data = {
+            "title": "Empty String Test Book",
+            "author_ids": ["", "  ", ""],  # Empty strings and whitespace
+            "publisher": "Empty Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        response = client.post("/book/", json=book_data)
+        # Should fail because empty strings are not valid author IDs
+        assert response.status_code == 400
+        assert "not found" in response.json()["detail"]
+
+    def test_create_author_with_empty_string_book_ids(self, client: TestClient):
+        """Test POST /author/ with empty strings in book_ids array"""
+        author_data = {
+            "name": "Empty",
+            "surname": "StringTest",
+            "birthyear": 1985,
+            "book_ids": ["", "  ", ""]  # Empty strings and whitespace
+        }
+        response = client.post("/author/", json=author_data)
+        # Should fail because empty strings are not valid book IDs
+        assert response.status_code == 409
+        assert "Book with ID" in response.json()["detail"]
+        assert "not found" in response.json()["detail"]
+
+    def test_create_book_with_none_values_in_author_ids(self, client: TestClient):
+        """Test POST /book/ with None/null values in author_ids array"""
+        book_data = {
+            "title": "None Values Test Book",
+            "author_ids": [None, "valid-id", None],  # None values mixed with string
+            "publisher": "None Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        response = client.post("/book/", json=book_data)
+        # Should fail due to invalid data types
+        assert response.status_code == 422  # Pydantic validation error
+
+    def test_atomic_reference_updates_on_book_creation_failure(self, client: TestClient):
+        """Test that partial failures in POST /book/ don't leave database in inconsistent state"""
+        # Create two valid authors
+        author1_data = {
+            "name": "Valid1",
+            "surname": "Author1",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        author2_data = {
+            "name": "Valid2", 
+            "surname": "Author2",
+            "birthyear": 1985,
+            "book_ids": []
+        }
+        
+        author1_response = client.post("/author/", json=author1_data)
+        author2_response = client.post("/author/", json=author2_data)
+        
+        valid_author1_id = author1_response.json()
+        valid_author2_id = author2_response.json()
+
+        # Try to create book with valid authors + one invalid author
+        # This should fail after processing some valid authors
+        book_data = {
+            "title": "Atomic Test Book",
+            "author_ids": [valid_author1_id, valid_author2_id, "invalid-author-id"],
+            "publisher": "Atomic Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        response = client.post("/book/", json=book_data)
+        assert response.status_code == 400
+        assert "not found" in response.json()["detail"]
+
+        # Verify that NO authors were modified (atomic operation)
+        author1_get = client.get(f"/author/{valid_author1_id}")
+        author2_get = client.get(f"/author/{valid_author2_id}")
+        
+        author1_info = author1_get.json()
+        author2_info = author2_get.json()
+        
+        assert len(author1_info["book_ids"]) == 0, "Author1 should have no books due to failed book creation"
+        assert len(author2_info["book_ids"]) == 0, "Author2 should have no books due to failed book creation"
+
+        # Verify no book was created
+        response = client.get("/book/")
+        books = response.json()
+        assert len(books) == 0, "No books should exist due to failed creation"
+
+    def test_atomic_reference_updates_on_author_creation_failure(self, client: TestClient):
+        """Test that partial failures in POST /author/ don't leave database in inconsistent state"""
+        # Create two valid books
+        book1_data = {
+            "title": "Valid Book 1",
+            "author_ids": [],
+            "publisher": "Valid Publisher 1",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book2_data = {
+            "title": "Valid Book 2",
+            "author_ids": [],
+            "publisher": "Valid Publisher 2", 
+            "edition": 1,
+            "published_date": "2023-02-01"
+        }
+        
+        book1_response = client.post("/book/", json=book1_data)
+        book2_response = client.post("/book/", json=book2_data)
+        
+        valid_book1_id = book1_response.json()
+        valid_book2_id = book2_response.json()
+
+        # Try to create author with valid books + one invalid book
+        author_data = {
+            "name": "Atomic",
+            "surname": "TestAuthor",
+            "birthyear": 1990,
+            "book_ids": [valid_book1_id, valid_book2_id, "invalid-book-id"]
+        }
+        response = client.post("/author/", json=author_data)
+        assert response.status_code == 409
+        assert "Book with ID invalid-book-id not found" in response.json()["detail"]
+
+        # Verify that NO books were modified (atomic operation)
+        book1_get = client.get(f"/book/{valid_book1_id}")
+        book2_get = client.get(f"/book/{valid_book2_id}")
+        
+        book1_info = book1_get.json()
+        book2_info = book2_get.json()
+        
+        assert len(book1_info["author_ids"]) == 0, "Book1 should have no authors due to failed author creation"
+        assert len(book2_info["author_ids"]) == 0, "Book2 should have no authors due to failed author creation"
+
+        # Verify no author was created
+        response = client.get("/author/")
+        authors = response.json()
+        assert len(authors) == 0, "No authors should exist due to failed creation"
 
 
 class TestIntegrationScenarios:

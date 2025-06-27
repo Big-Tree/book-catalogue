@@ -57,9 +57,14 @@ async def add_author(author: Author) -> AuthorId:
         if book_id not in book_db:
             raise HTTPException(status_code=409, detail=f"Book with ID {book_id} not found")
 
-    id = AuthorId(str(uuid.uuid4()))
-    author_db[id] = author
-    return id
+    author_id = AuthorId(str(uuid.uuid4()))
+    author_db[author_id] = author
+
+    for book_id in author.book_ids:
+        if author_id not in book_db[book_id].author_ids:
+            book_db[book_id].author_ids.append(author_id)
+
+    return author_id
 
 
 @app.get("/author/{author_id}")
@@ -106,10 +111,12 @@ async def add_book(book: Book) -> BookId:
     for author_id in book.author_ids:
         if author_id not in author_db:
             raise HTTPException(status_code=400, detail=f"Author with ID {author_id} not found")
-        else:
-            author_db[author_id].book_ids.append(book_id)
 
     book_db[book_id] = book
+
+    for author_id in book.author_ids:
+        if book_id not in author_db[author_id].book_ids:
+            author_db[author_id].book_ids.append(book_id)
 
     return book_id
 
