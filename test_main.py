@@ -823,6 +823,240 @@ class TestBookEndpoints:
         assert len(authors) == 0, "No authors should exist due to failed creation"
 
 
+class TestPutOperationsBidirectionalConsistency:
+    def test_put_author_with_new_book_ids_updates_books(self, client: TestClient):
+        """Test PUT /author/ with new book_ids updates books bidirectionally"""
+        # Create author and books
+        author_data = {
+            "name": "Original",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        book1_data = {
+            "title": "Book 1",
+            "author_ids": [],
+            "publisher": "Publisher 1",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book2_data = {
+            "title": "Book 2", 
+            "author_ids": [],
+            "publisher": "Publisher 2",
+            "edition": 1,
+            "published_date": "2023-02-01"
+        }
+        
+        author_response = client.post("/author/", json=author_data)
+        book1_response = client.post("/book/", json=book1_data)
+        book2_response = client.post("/book/", json=book2_data)
+        
+        author_id = author_response.json()
+        book1_id = book1_response.json()
+        book2_id = book2_response.json()
+
+        # Update author to reference both books
+        updated_author_data = {
+            "name": "Updated",
+            "surname": "Author",
+            "birthyear": 1981,
+            "book_ids": [book1_id, book2_id]
+        }
+        response = client.put(f"/author/{author_id}", json=updated_author_data)
+        assert response.status_code == 200
+
+        # Verify bidirectional consistency - books should have the author
+        book1_get = client.get(f"/book/{book1_id}")
+        book2_get = client.get(f"/book/{book2_id}")
+        
+        book1_info = book1_get.json()
+        book2_info = book2_get.json()
+        
+        assert author_id in book1_info["author_ids"], f"Author {author_id} should be in book1 author_ids"
+        assert author_id in book2_info["author_ids"], f"Author {author_id} should be in book2 author_ids"
+
+    def test_put_author_removes_old_book_references(self, client: TestClient):
+        """Test PUT /author/ removes author from old books when book_ids change"""
+        # Create author with initial books
+        book1_data = {
+            "title": "Old Book",
+            "author_ids": [],
+            "publisher": "Old Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        book2_data = {
+            "title": "New Book",
+            "author_ids": [],
+            "publisher": "New Publisher", 
+            "edition": 1,
+            "published_date": "2023-02-01"
+        }
+        
+        book1_response = client.post("/book/", json=book1_data)
+        book2_response = client.post("/book/", json=book2_data)
+        
+        book1_id = book1_response.json()
+        book2_id = book2_response.json()
+
+        author_data = {
+            "name": "Test",
+            "surname": "Author",
+            "birthyear": 1985,
+            "book_ids": [book1_id]  # Initially references book1
+        }
+        author_response = client.post("/author/", json=author_data)
+        author_id = author_response.json()
+
+        # Update author to reference book2 instead of book1
+        updated_author_data = {
+            "name": "Test",
+            "surname": "Author",
+            "birthyear": 1985,
+            "book_ids": [book2_id]  # Now references book2
+        }
+        response = client.put(f"/author/{author_id}", json=updated_author_data)
+        assert response.status_code == 200
+
+        # Verify book1 no longer has the author
+        book1_get = client.get(f"/book/{book1_id}")
+        book1_info = book1_get.json()
+        assert author_id not in book1_info["author_ids"], f"Author {author_id} should be removed from book1"
+
+        # Verify book2 now has the author
+        book2_get = client.get(f"/book/{book2_id}")
+        book2_info = book2_get.json()
+        assert author_id in book2_info["author_ids"], f"Author {author_id} should be added to book2"
+
+    def test_put_book_with_new_author_ids_updates_authors(self, client: TestClient):
+        """Test PUT /book/ with new author_ids updates authors bidirectionally"""
+        # Create book and authors
+        book_data = {
+            "title": "Original Book",
+            "author_ids": [],
+            "publisher": "Original Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        author1_data = {
+            "name": "Author",
+            "surname": "One",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        author2_data = {
+            "name": "Author",
+            "surname": "Two",
+            "birthyear": 1985,
+            "book_ids": []
+        }
+        
+        book_response = client.post("/book/", json=book_data)
+        author1_response = client.post("/author/", json=author1_data)
+        author2_response = client.post("/author/", json=author2_data)
+        
+        book_id = book_response.json()
+        author1_id = author1_response.json()
+        author2_id = author2_response.json()
+
+        # Update book to reference both authors
+        updated_book_data = {
+            "title": "Updated Book",
+            "author_ids": [author1_id, author2_id],
+            "publisher": "Updated Publisher",
+            "edition": 2,
+            "published_date": "2023-06-01"
+        }
+        response = client.put(f"/book/{book_id}", json=updated_book_data)
+        assert response.status_code == 200
+
+        # Verify bidirectional consistency - authors should have the book
+        author1_get = client.get(f"/author/{author1_id}")
+        author2_get = client.get(f"/author/{author2_id}")
+        
+        author1_info = author1_get.json()
+        author2_info = author2_get.json()
+        
+        assert book_id in author1_info["book_ids"], f"Book {book_id} should be in author1 book_ids"
+        assert book_id in author2_info["book_ids"], f"Book {book_id} should be in author2 book_ids"
+
+    def test_put_book_with_invalid_author_ids_atomic_failure(self, client: TestClient):
+        """Test PUT /book/ with invalid author_ids fails atomically"""
+        # Create book and one valid author
+        book_data = {
+            "title": "Test Book",
+            "author_ids": [],
+            "publisher": "Test Publisher",
+            "edition": 1,
+            "published_date": "2023-01-01"
+        }
+        author_data = {
+            "name": "Valid",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        
+        book_response = client.post("/book/", json=book_data)
+        author_response = client.post("/author/", json=author_data)
+        
+        book_id = book_response.json()
+        valid_author_id = author_response.json()
+
+        # Try to update book with valid and invalid author
+        updated_book_data = {
+            "title": "Updated Book",
+            "author_ids": [valid_author_id, "invalid-author-id"],
+            "publisher": "Updated Publisher",
+            "edition": 2,
+            "published_date": "2023-06-01"
+        }
+        response = client.put(f"/book/{book_id}", json=updated_book_data)
+        assert response.status_code == 400
+        assert "not found" in response.json()["detail"]
+
+        # Verify atomic failure - book should be unchanged
+        book_get = client.get(f"/book/{book_id}")
+        book_info = book_get.json()
+        assert book_info["title"] == "Test Book"  # Original title
+        assert book_info["author_ids"] == []  # Original empty list
+
+        # Verify author wasn't modified
+        author_get = client.get(f"/author/{valid_author_id}")
+        author_info = author_get.json()
+        assert len(author_info["book_ids"]) == 0
+
+    def test_put_author_with_invalid_book_ids(self, client: TestClient):
+        """Test PUT /author/ with invalid book_ids fails with validation error"""
+        # Create author
+        author_data = {
+            "name": "Test",
+            "surname": "Author",
+            "birthyear": 1980,
+            "book_ids": []
+        }
+        author_response = client.post("/author/", json=author_data)
+        author_id = author_response.json()
+
+        # Try to update author with invalid book_ids
+        updated_author_data = {
+            "name": "Updated",
+            "surname": "Author",
+            "birthyear": 1981,
+            "book_ids": ["invalid-book-id"]
+        }
+        response = client.put(f"/author/{author_id}", json=updated_author_data)
+        assert response.status_code == 409
+        assert "Book with ID invalid-book-id not found" in response.json()["detail"]
+
+        # Verify author wasn't modified
+        author_get = client.get(f"/author/{author_id}")
+        author_info = author_get.json()
+        assert author_info["name"] == "Test"  # Original name
+        assert author_info["book_ids"] == []  # Original empty list
+
+
 class TestIntegrationScenarios:
     def test_full_workflow(self, client: TestClient):
         """Test complete workflow: create author, create book, update, delete"""

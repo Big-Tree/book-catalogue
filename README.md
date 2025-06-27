@@ -42,3 +42,14 @@ uv run pytest -v
 uv run ruff check    # Linting
 uv run pyright       # Type checking
 ```
+
+## Known Issues
+
+**PUT operations are broken:**
+- No validation of referenced IDs
+- No bidirectional reference updates
+
+**Failing tests:**
+```bash
+uv run pytest test_main.py::TestPutOperationsBidirectionalConsistency -v
+```
