@@ -3,11 +3,10 @@ from __future__ import annotations
 import uuid
 from typing import NewType
 
-import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-app = FastAPI(title="Template REST API", version="1.0.0")
+app = FastAPI(title="Book Catalogue REST API", version="1.0.0")
 
 AuthorId = NewType('AuthorId', str)
 BookId = NewType('BookId', str)
@@ -137,7 +136,3 @@ async def delete_book(book_id: BookId) -> BookId:
 
     del book_db[book_id]
     return book_id
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)

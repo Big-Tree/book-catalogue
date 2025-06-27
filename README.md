@@ -22,7 +22,7 @@ uv sync
 
 Start server:
 ```bash
-uv run python main.py
+uv run fastapi dev main.py --port 8080
 ```
 
 Server runs on `http://localhost:8080`

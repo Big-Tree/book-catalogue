@@ -5,13 +5,11 @@ description = "Catalogue for all your books"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastapi>=0.115.13",
-    "uvicorn[standard]>=0.34.3",
+    "fastapi[standard]>=0.115.13",
 ]
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
     "ipdb>=0.13.13",
     "pyright==1.1.400",
     "pytest>=8.4.1",
